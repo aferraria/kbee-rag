@@ -1,0 +1,67 @@
+package kbee.rag.search;
+
+
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import reactor.core.publisher.Mono;
+
+@RestController
+@RequestMapping("/api/rag")
+public class RagController {
+
+    private final RagService ragService;
+
+    public RagController(
+            RagService ragService) {
+
+        this.ragService =
+                ragService;
+    }
+
+    @PostMapping("/sources")
+    public Mono<List<ExpandedSource>> answer(
+            @RequestBody RagRequest request) {
+
+        return ragService.rankSources(
+                request
+        );
+    }
+    
+    
+    @PostMapping("/answer")
+    public Mono<RagResponse> rerank(
+            @RequestBody RagRequest request) {
+
+        return ragService.answer(
+                request
+        );
+    }
+    
+//    @PostMapping("/search")
+//    public ResponseEntity<List<SegmentSearchResult>> search(
+//            @RequestBody RagRequest request)
+//            throws SolrServerException, IOException {
+//
+//        return ResponseEntity.ok(
+//                ragService.search(request)
+//        );
+//    }
+    
+    @PostMapping("/document-analysis")
+    public ResponseEntity<DocumentAnalysisResponse> analyzeDocument(
+            @RequestBody DocumentAnalysisRequest request) {
+
+        return ResponseEntity.ok(
+                ragService.analyzeDocument(
+                        request.documentId(),
+                        request.question()
+                )
+        );
+    }
+}

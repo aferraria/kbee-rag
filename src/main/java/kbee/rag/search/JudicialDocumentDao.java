@@ -1,0 +1,317 @@
+package kbee.rag.search;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+@Component
+public class JudicialDocumentDao
+        implements DocumentDao {
+
+    private static final int MAX_HITS_PER_DOCUMENT =
+            3;
+
+    private static final int OVERLAP_DISTANCE =
+            2;
+
+    private static final int EXPANSION_RADIUS =
+            1;
+
+    private final SegmentDao segmentDao;
+
+    public JudicialDocumentDao(
+            SegmentDao solrService) {
+
+        this.segmentDao =
+                solrService;
+    }
+
+    @Override
+    public Mono<List<ExpandedSource>> getSources(
+            List<SegmentSearchResult> results,
+            String question) {
+
+        if (results == null
+                || results.isEmpty()) {
+
+            return Mono.just(
+                    List.of()
+            );
+        }
+
+        Map<String, List<SegmentSearchResult>> candidatesByDocument =
+                groupByDocument(
+                        results
+                );
+
+        return Flux.fromIterable(
+                candidatesByDocument.entrySet()
+        )
+        .concatMap(entry -> {
+
+            List<SegmentSearchResult> parts =
+                    entry.getValue()
+                            .stream()
+                            .sorted(
+                                    Comparator
+                                            .comparing(
+                                                    SegmentSearchResult::score
+                                            )
+                                            .reversed()
+                            )
+                            .toList();
+
+            if (parts.isEmpty()) {
+                return Mono.<ExpandedSource>empty();
+            }
+
+            List<SegmentSearchResult> selectedParts =
+                    selectNonOverlappingParts(
+                            parts
+                    );
+
+            if (selectedParts.isEmpty()) {
+                return Mono.<ExpandedSource>empty();
+            }
+
+            SegmentSearchResult selected =
+                    selectedParts.get(0);
+
+            return expandNeighbors(
+                    selectedParts,
+                    EXPANSION_RADIUS,
+                    question
+            )
+            .collectList()
+            .map(expandedParts -> {
+
+                Map<String, SegmentSearchResult> contextById =
+                        new LinkedHashMap<>();
+
+                for (ExpandedSource expandedPart :
+                        expandedParts) {
+
+                    SegmentSearchResult partSelected =
+                            expandedPart.selected();
+
+                    if (partSelected != null) {
+                        contextById.putIfAbsent(
+                                partSelected.id(),
+                                partSelected
+                        );
+                    }
+
+                    for (SegmentSearchResult context :
+                            expandedPart.contextSegments()) {
+
+                        contextById.putIfAbsent(
+                                context.id(),
+                                context
+                        );
+                    }
+                }
+
+                contextById.remove(
+                        selected.id()
+                );
+
+                List<SegmentSearchResult> contextSegments =
+                        new ArrayList<>(
+                                contextById.values()
+                        );
+
+                return new ExpandedSource(
+                        selected,
+                        contextSegments
+                );
+            });
+        })
+        .collectList();
+    }
+
+    /*
+     * =================================================
+     * GROUP BY DOCUMENT
+     * =================================================
+     */
+
+    private Map<String, List<SegmentSearchResult>> groupByDocument(
+            List<SegmentSearchResult> results) {
+
+        return results.stream()
+                .filter(Objects::nonNull)
+                .collect(
+                        Collectors.groupingBy(
+                                this::getLogicalDocumentId,
+                                LinkedHashMap::new,
+                                Collectors.toList()
+                        )
+                );
+    }
+
+    /*
+     * =================================================
+     * LOGICAL DOCUMENT
+     * =================================================
+     */
+
+    private String getLogicalDocumentId(
+            SegmentSearchResult result) {
+
+        /*
+         * Acá ponemos la lógica real para que
+         * fallo y sumarios asociados terminen bajo
+         * el mismo documento lógico.
+         *
+         * Por ahora:
+         */
+        return result.documentId();
+    }
+
+    /*
+     * =================================================
+     * SELECT PARTS
+     * =================================================
+     */
+
+    private List<SegmentSearchResult> selectNonOverlappingParts(
+            List<SegmentSearchResult> parts) {
+
+        List<SegmentSearchResult> selected =
+                new ArrayList<>();
+
+        for (SegmentSearchResult part :
+                parts) {
+
+            boolean overlaps =
+                    selected.stream()
+                            .anyMatch(existing ->
+                                    overlaps(
+                                            existing,
+                                            part
+                                    )
+                            );
+
+            if (!overlaps) {
+
+                selected.add(
+                        part
+                );
+            }
+
+            if (selected.size()
+                    >= MAX_HITS_PER_DOCUMENT) {
+
+                break;
+            }
+        }
+
+        return selected;
+    }
+
+    /*
+     * =================================================
+     * OVERLAP
+     * =================================================
+     */
+
+    private boolean overlaps(
+            SegmentSearchResult existing,
+            SegmentSearchResult candidate) {
+
+        /*
+         * Segmentos provenientes de documentos físicos
+         * distintos no se consideran solapados.
+         *
+         * Por ejemplo:
+         * sumario vs fallo.
+         */
+        if (!Objects.equals(
+                existing.documentId(),
+                candidate.documentId()
+        )) {
+
+            return false;
+        }
+
+        return Math.abs(
+                existing.segmentNumber()
+                        - candidate.segmentNumber()
+        ) <= OVERLAP_DISTANCE;
+    }
+
+    /*
+     * =================================================
+     * EXPANSION
+     * =================================================
+     */
+    
+    private Flux<ExpandedSource> expandNeighbors(
+            List<SegmentSearchResult> selectedParts,
+            int radius,
+            String question) {
+
+        return Flux.fromIterable(selectedParts)
+                .concatMap(selected ->
+                        expandNeighbors(
+                                selected,
+                                radius,
+                                question
+                        )
+                );
+    }
+
+    private Mono<ExpandedSource> expandNeighbors(
+            SegmentSearchResult selected,
+            int radius,
+            String question) {
+
+        return findNeighborSegments(
+                selected,
+                radius
+        )
+        .collectList()
+        .map(context ->
+                new ExpandedSource(
+                        selected,
+                        context
+                )
+        );
+    }
+
+
+    /*
+     * =================================================
+     * FIND NEIGHBORS
+     * =================================================
+     */
+
+    private Flux<SegmentSearchResult> findNeighborSegments(
+            SegmentSearchResult selected,
+            int radius) {
+
+        int from =
+                Math.max(
+                        0,
+                        selected.segmentNumber() - radius
+                );
+
+        int to =
+                selected.segmentNumber() + radius;
+
+        return segmentDao.findSegments(
+                selected.documentId(),
+                from,
+                to
+        );
+    }
+}

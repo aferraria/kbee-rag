@@ -1,0 +1,115 @@
+server:
+  port: 8080
+
+  
+spring:
+  mvc:
+    async:
+      request-timeout: 9000000  
+solr:
+  source:
+    base-url: http://localhost:8087/solr
+    core: aacontent
+ 
+  target:
+    base-url: http://localhost:8983/solr
+    core: kbee_segments  
+
+rag:
+  prompts:
+    rerank: rerank-qwen14
+    answer: rag-answer
+    thesaurus: thesaurus
+    propositions: legal
+    enrichment:
+       segment: segment-enrichment
+       question: question-enrichment
+  
+embedding:
+  provider: qwen-local
+  dimension: 1024
+  
+  qwen-local:
+    base-url: http://localhost:11434
+    model: qwen3-embedding:0.6b
+    connection-timeout-ms: 5000
+    request-timeout-ms: 120000
+
+  local-multilingual:
+    base-url: http://localhost:8090
+    connection-timeout-ms: 5000
+    request-timeout-ms: 120000
+
+  local:
+    model: all-minilm-l6-v2-q
+
+  huggingface:
+    access-token: ${HF_TOKEN}
+    model-id: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+    base-url: https://router.huggingface.co/hf-inference/models
+    connection-timeout-ms: 10000
+    request-timeout-ms: 220000
+
+vector-search:
+  embedding-field: embedding
+
+segment-indexer:
+  enabled: false
+
+  source-query: 'type:"idoc" AND head:"true" AND portaltext:[* TO *]'
+  source-id-field: id
+  source-text-field: portaltext
+
+  source-start: 0
+  source-max-ids: 4000
+  source-page-size: 10
+
+  segment-size: 1500
+  segment-overlap: 0
+
+  embedding-batch-size: 5
+  indexing-batch-size: 100
+
+  commit-every-documents: 50
+
+llm:
+  provider: ollama
+
+  ollama:
+    base-url: http://localhost:11434
+    model: qwen3.5:latest
+    connection-timeout-ms: 90000
+    request-timeout-ms: 9000000
+
+  openai:
+    api-key: ${OPENAI_API_KEY}
+    model: gpt-5.6
+    endpoint: https://api.openai.com/v1/responses
+    connection-timeout-ms: 10000
+    request-timeout-ms: 120000
+
+llm-test:
+  enabled: false
+  
+reranker:
+   provider: qwen-llm
+
+   enabled: true
+   base-url: http://localhost:8091
+   connection-timeout-ms: 5000
+   request-timeout-ms: 9000000
+   candidate-count: 50
+   top-k: 5  
+   
+judicial-indexer:
+   enabled: false
+
+   directory: fallos
+
+   segment-size: 1500
+   segment-overlap: 0
+
+   embedding-batch-size: 32
+   indexing-batch-size: 100
+
+   commit-every-documents: 100

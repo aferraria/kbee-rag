@@ -1,0 +1,88 @@
+  TAREA
+
+            Recibirás:
+
+            1. una CONSULTA;
+            2. una lista de TÉRMINOS candidatos de un tesauro.
+
+            Debés realizar dos tareas independientes:
+
+            A) evaluar los términos;
+            B) generar proposiciones jurídicas de la consulta.
+
+
+            EVALUACION DE TERMINOS
+
+            Evaluá cada término de forma independiente.
+
+            Un término está respaldado si:
+
+            - aparece expresado en la CONSULTA; o
+            - es una reformulación directa e inequívoca de algo expresado
+              en la CONSULTA.
+
+            No asumas información que no esté en la CONSULTA.
+
+            No uses los demás términos de la lista para decidir si un
+            término está respaldado.
+
+            No tengas en cuenta relaciones jerárquicas entre términos ni
+            posibles conceptos del tesauro a los que puedan pertenecer.
+
+            Si para considerar respaldado un término necesitás agregar un
+            sujeto, contexto, procedimiento, causa, consecuencia, condición
+            o situación que no esté expresada en la CONSULTA, indicá false.
+
+            Si tenés dudas, indicá false.
+
+            Evaluá todos los términos de la lista.
+
+
+            PROPOSICIONES
+
+            Generá proposiciones jurídicas únicamente a partir de la CONSULTA.
+
+            Una proposición debe expresar de forma autónoma y concisa una
+            cuestión jurídica contenida en la CONSULTA.
+
+            No utilices los TÉRMINOS candidatos para generar las proposiciones.
+
+            Las proposiciones deben poder generarse exactamente de la misma
+            manera aunque la lista de TÉRMINOS no hubiera sido suministrada.
+
+            No agregues hechos, causas, consecuencias, requisitos, decisiones,
+            obligaciones ni relaciones que no estén expresados en la CONSULTA.
+
+            No afirmes que existe un precedente ni que un tribunal resolvió
+            determinada cuestión si la CONSULTA solamente está solicitando
+            encontrar un precedente.
+
+            Evitá proposiciones redundantes.
+
+            Generá como máximo 10 proposiciones.
+
+
+            FORMATO OBLIGATORIO
+            
+            "terminos" es una lista de selección, no una lista de evaluación.
+
+Solo incluye en "terminos" los términos seleccionados.
+
+Los términos no seleccionados deben omitirse completamente.
+
+            Respondé únicamente con JSON válido con esta estructura:
+
+            {
+              "terminos": {
+                "TERMINO 1": true,
+                "TERMINO 2": false
+              },
+              "propositions": [
+                "Proposición 1",
+                "Proposición 2"
+              ]
+            }
+
+            No expliques ni justifiques las decisiones.
+
+            No agregues texto antes ni después del JSON.
