@@ -264,11 +264,96 @@ public class ThesaursService {
                 new LinkedHashMap<>();
 
         /*
-         * Safety net global.
+         * =============================================
+         * 1. Construimos todas las ventanas
+         * =============================================
          */
+
+        List<String> windows =
+                new ArrayList<>();
+
+        for (String sentence :
+                splitSentences(segmentText)) {
+
+            if (!isUsefulSentence(sentence)) {
+                continue;
+            }
+
+            windows.addAll(
+                    buildWindows(sentence)
+            );
+        }
+
+        /*
+         * =============================================
+         * 2. Embedding batch
+         *
+         * posición 0 -> segmento completo
+         * posición 1..N -> windows
+         * =============================================
+         */
+
+        List<String> textsToEmbed =
+                new ArrayList<>(
+                        windows.size() + 1
+                );
+
+        textsToEmbed.add(
+                segmentText
+        );
+
+        textsToEmbed.addAll(
+                windows
+        );
+
+        long embeddingStart =
+                System.nanoTime();
+
+        List<List<Float>> embeddings =
+                embeddingService.embed(
+                        textsToEmbed
+                );
+
+        long embeddingElapsed =
+                System.nanoTime()
+                        - embeddingStart;
+
+//        System.out.printf(
+//                "EMBEDDING BATCH texts=%d time=%.3f s%n",
+//                textsToEmbed.size(),
+//                embeddingElapsed
+//                        / 1_000_000_000.0
+//        );
+
+        if (embeddings == null
+                || embeddings.size()
+                        != textsToEmbed.size()) {
+
+            throw new IllegalStateException(
+                    "Cantidad incorrecta de embeddings. "
+                            + "Esperados="
+                            + textsToEmbed.size()
+                            + ", recibidos="
+                            + (
+                                embeddings == null
+                                        ? 0
+                                        : embeddings.size()
+                            )
+            );
+        }
+
+        /*
+         * =============================================
+         * 3. Safety net global
+         * =============================================
+         */
+
+        List<Float> globalEmbedding =
+                embeddings.get(0);
+
         List<ThesaurusCandidate> globalCandidates =
                 findVectorCandidates(
-                        segmentText,
+                        globalEmbedding,
                         100
                 );
 
@@ -288,59 +373,44 @@ public class ThesaursService {
         );
 
         /*
-         * Búsquedas locales:
-         * oración -> ventanas.
+         * =============================================
+         * 4. Búsquedas locales
+         * =============================================
          */
-        for (String sentence :
-                splitSentences(segmentText)) {
 
-            if (!isUsefulSentence(sentence)) {
-                continue;
-            }
+        for (int i = 0;
+                i < windows.size();
+                i++) {
 
-            for (String window :
-                    buildWindows(sentence)) {
+            /*
+             * +1 porque embeddings[0]
+             * corresponde al segmento completo.
+             */
+            List<Float> embedding =
+                    embeddings.get(
+                            i + 1
+                    );
 
-//                System.out.println();
-//                System.out.println(
-//                        "===== THESAURUS WINDOW ====="
-//              );
-//
-//                System.out.println(window);
+            List<ThesaurusCandidate> candidates =
+                    findVectorCandidates(
+                            embedding,
+                            20
+                    );
 
-                List<ThesaurusCandidate> candidates =
-                        findVectorCandidates(
-                                window,
-                                20
-                        );
+            candidates =
+                    expandHierarchy(
+                            candidates
+                    );
 
-                /*
-                 * Primero expandimos la jerarquía
-                 * dentro de esta búsqueda.
-                 */
-                candidates =
-                        expandHierarchy(
-                                candidates
-                        );
+            candidates =
+                    normalizeCandidates(
+                            candidates
+                    );
 
-                /*
-                 * Después normalizamos el conjunto
-                 * completo de esta window.
-                 */
-                candidates =
-                        normalizeCandidates(
-                                candidates
-                        );
-
-//                printCandidates(
-//                        candidates
-//                );
-
-                mergeCandidates(
-                        merged,
-                        candidates
-                );
-            }
+            mergeCandidates(
+                    merged,
+                    candidates
+            );
         }
 
         return merged.values()
@@ -353,6 +423,146 @@ public class ThesaursService {
                 .toList();
     }
     
+    
+    private List<ThesaurusCandidate> findVectorCandidates(
+            List<Float> vector,
+            int topK) {
+
+        try {
+
+            if (vector == null
+                    || vector.isEmpty()) {
+
+                return List.of();
+            }
+
+            String vectorString =
+                    toSolrVector(
+                            vector
+                    );
+
+            /*
+             * KNN únicamente contra documentos
+             * que representan voces del tesauro.
+             */
+
+            ModifiableSolrParams params =
+                    new ModifiableSolrParams();
+
+            params.set(
+                    "q",
+                    "{!knn f="
+                            + embeddingField
+                            + " topK="
+                            + topK
+                            + "}"
+                            + vectorString
+            );
+
+            params.set(
+                    "fq",
+                    "document_type:thesaurus"
+            );
+
+            params.set(
+                    "fl",
+                    "id,thesaurus_term,score"
+            );
+
+            params.set(
+                    "rows",
+                    topK
+            );
+
+            QueryRequest queryRequest =
+                    new QueryRequest(
+                            params,
+                            SolrRequest.METHOD.POST
+                    );
+
+            long solrStart =
+                    System.nanoTime();
+
+            QueryResponse response =
+                    queryRequest.process(
+                            solrClient,
+                            targetCore
+                    );
+
+            long solrElapsed =
+                    System.nanoTime()
+                            - solrStart;
+
+//            System.out.printf(
+//                    "SOLR KNN topK=%d time=%.3f s%n",
+//                    topK,
+//                    solrElapsed
+//                            / 1_000_000_000.0
+//            );
+
+            return response
+                    .getResults()
+                    .stream()
+                    .map(document -> {
+
+                        Object termValue =
+                                document.getFieldValue(
+                                        "thesaurus_term"
+                                );
+
+                        Object scoreValue =
+                                document.getFieldValue(
+                                        "score"
+                                );
+
+                        String term =
+                                extractThesaurusTerm(
+                                        termValue
+                                );
+
+                        if (term == null
+                                || term.isBlank()) {
+
+                            return null;
+                        }
+
+                        float score =
+                                0f;
+
+                        if (scoreValue
+                                instanceof Number number) {
+
+                            score =
+                                    number.floatValue();
+                        }
+
+                        return new ThesaurusCandidate(
+                                term,
+                                score
+                        );
+
+                    })
+                    .filter(
+                            Objects::nonNull
+                    )
+                    .filter(candidate ->
+                            !candidate.voice()
+                                    .isBlank()
+                    )
+                    .toList();
+
+        } catch (Exception exception) {
+
+            exception.printStackTrace();
+
+            throw new IllegalStateException(
+                    "No fue posible realizar "
+                            + "la búsqueda vectorial "
+                            + "sobre el tesauro",
+                    exception
+            );
+        }
+    }
 
     
     private List<ThesaurusCandidate> normalizeCandidates(
@@ -1123,12 +1333,31 @@ public class ThesaursService {
         try {
 
             /*
-             * Generamos el embedding de la pregunta.
+             * =============================================
+             * EMBEDDING
+             * =============================================
              */
+
+            long embeddingStart =
+                    System.nanoTime();
+
             List<List<Float>> embeddings =
                     embeddingService.embed(
                             List.of(question)
                     );
+
+            long embeddingElapsed =
+                    System.nanoTime()
+                            - embeddingStart;
+
+            System.out.printf(
+                    "EMBEDDING chars=%d time=%.3f s%n",
+                    question == null
+                            ? 0
+                            : question.length(),
+                    embeddingElapsed
+                            / 1_000_000_000.0
+            );
 
             if (embeddings == null
                     || embeddings.isEmpty()
@@ -1145,9 +1374,11 @@ public class ThesaursService {
                     toSolrVector(vector);
 
             /*
-             * KNN únicamente contra documentos
-             * que representan voces del tesauro.
+             * =============================================
+             * SOLR KNN
+             * =============================================
              */
+
             ModifiableSolrParams params =
                     new ModifiableSolrParams();
 
@@ -1182,11 +1413,25 @@ public class ThesaursService {
                             SolrRequest.METHOD.POST
                     );
 
+            long solrStart =
+                    System.nanoTime();
+
             QueryResponse response =
                     queryRequest.process(
                             solrClient,
                             targetCore
                     );
+
+            long solrElapsed =
+                    System.nanoTime()
+                            - solrStart;
+
+            System.out.printf(
+                    "SOLR KNN topK=%d time=%.3f s%n",
+                    topK,
+                    solrElapsed
+                            / 1_000_000_000.0
+            );
 
             return response
                     .getResults()
@@ -1226,6 +1471,7 @@ public class ThesaursService {
                                 term,
                                 score
                         );
+
                     })
                     .filter(Objects::nonNull)
                     .filter(candidate ->
@@ -1234,7 +1480,9 @@ public class ThesaursService {
                     .toList();
 
         } catch (Exception exception) {
-        	exception.printStackTrace();
+
+            exception.printStackTrace();
+
             throw new IllegalStateException(
                     "No fue posible realizar "
                             + "la búsqueda vectorial "

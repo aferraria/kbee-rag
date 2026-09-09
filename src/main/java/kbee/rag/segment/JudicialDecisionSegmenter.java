@@ -222,7 +222,8 @@ public class JudicialDecisionSegmenter
                                 null,
                                 file.type(),
                                 List.of(),
-                                List.of()
+                                List.of(),
+                                file.metadata()
                         );
 
                 segments.add(

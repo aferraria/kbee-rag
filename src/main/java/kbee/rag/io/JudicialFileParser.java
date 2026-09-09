@@ -7,10 +7,12 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -65,6 +67,9 @@ public class JudicialFileParser
 
     public static final String META_THESAURUS_TERMS =
             "thesaurusTerms";
+    
+    public static final String META_SUBJECTS =
+            "subjects";
 
     /*
      * =================================================
@@ -73,10 +78,10 @@ public class JudicialFileParser
      */
 
     private record SummaryData(
+            List<String> subjects,
             List<String> thesaurusTerms,
             String text) {
     }
-
     /*
      * =================================================
      * API
@@ -176,23 +181,26 @@ public class JudicialFileParser
         /*
          * Fallo.
          */
-
+        
+        TextFile decision = null;
+        
         if (decisionText != null
                 && !decisionText.isBlank()) {
+        	
+        	decision = buildDecision(
+                    falloId,
+                    documentTitle,
+                    documentDate,
+                    decisionText
+            ); 
 
-            result.add(
-                    buildDecision(
-                            falloId,
-                            documentTitle,
-                            documentDate,
-                            decisionText
-                    )
-            );
         }
 
         /*
          * Sumarios.
          */
+        
+        Set<String> subjects = new HashSet<>();
 
         List<SummaryData> summaries =
                 extractSummaries(
@@ -208,6 +216,8 @@ public class JudicialFileParser
 
             SummaryData summary =
                     summaries.get(i);
+            
+            subjects.addAll(summary.subjects());
 
             if (summary == null
                     || summary.text() == null
@@ -226,7 +236,32 @@ public class JudicialFileParser
                     )
             );
         }
+        
+        if (decision != null) {
 
+            Map<String, Object> metadata =
+                    new LinkedHashMap<>(
+                            decision.metadata()
+                    );
+
+            metadata.put(
+                    META_SUBJECTS,
+                    List.copyOf(subjects)
+            );
+
+            decision =
+                    new TextFile(
+                            decision.id(),
+                            decision.name(),
+                            decision.title(),
+                            decision.type(),
+                            decision.date(),
+                            decision.text(),
+                            metadata
+                    );
+            result.add(decision);
+        }
+        
         System.out.println(
                 file.name()
                         + " -> falloId="
@@ -302,6 +337,15 @@ public class JudicialFileParser
             metadata.put(
                     META_THESAURUS_TERMS,
                     summary.thesaurusTerms()
+            );
+        }
+        
+        if (summary.subjects() != null
+                && !summary.subjects().isEmpty()) {
+
+            metadata.put(
+                    META_SUBJECTS,
+                    summary.subjects()
             );
         }
 
@@ -549,6 +593,7 @@ public class JudicialFileParser
                 );
 
         if (!headerMatcher.find()) {
+
             return summaries;
         }
 
@@ -605,19 +650,26 @@ public class JudicialFileParser
                         );
 
         /*
-         * Inicio de cada sumario:
+         * =================================================
+         * INICIO DE CADA SUMARIO
+         * =================================================
+         *
+         * Ejemplos:
          *
          * ADMINISTRATIVOTesauro >
+         *
          * PROCESAL - ADMINISTRATIVOTesauro >
-         * CONSTITUCIONAL - CIVILTesauro >
+         *
+         * CONSTITUCIONAL - PROCESALTesauro >
+         *
+         * No validamos aquí la estructura de la materia.
+         * Solamente detectamos una línea que comienza
+         * el sumario y llega hasta el primer "Tesauro >".
          */
 
         Pattern summaryStartPattern =
                 Pattern.compile(
-                        "(?m)^\\s*"
-                                + "[A-ZÁÉÍÓÚÑ]+"
-                                + "(?:\\s*-\\s*[A-ZÁÉÍÓÚÑ]+)*"
-                                + "\\s*Tesauro\\s*>"
+                        "(?im)^\\s*[^\\r\\n]+?\\s*Tesauro\\s*>"
                 );
 
         Matcher summaryMatcher =
@@ -632,6 +684,11 @@ public class JudicialFileParser
 
             starts.add(
                     summaryMatcher.start()
+            );
+
+            System.out.println(
+                    "Inicio de sumario encontrado: "
+                            + summaryMatcher.group()
             );
         }
 
@@ -771,21 +828,77 @@ public class JudicialFileParser
                         .trim();
 
         /*
-         * Quitar categoría:
+         * =================================================
+         * MATERIAS
+         * =================================================
+         *
+         * Ejemplos:
          *
          * ADMINISTRATIVO
          * PROCESAL - ADMINISTRATIVO
-         * CONSTITUCIONAL - CIVIL
+         * CONSTITUCIONAL - PROCESAL
+         *
+         * Cada término separado por "-"
+         * representa una materia distinta.
          */
 
-        block =
-                block.replaceFirst(
-                                "^[A-ZÁÉÍÓÚÑ]+"
-                                        + "(?:\\s*-\\s*[A-ZÁÉÍÓÚÑ]+)*"
-                                        + "\\s*(?=Tesauro\\s*>)",
-                                ""
-                        )
-                        .trim();
+        Pattern subjectPattern =
+                Pattern.compile(
+                        "^\\s*("
+                                + "[A-ZÁÉÍÓÚÑ]+"
+                                + "(?:\\s*-\\s*[A-ZÁÉÍÓÚÑ]+)*"
+                                + ")\\s*(?=Tesauro\\s*>)"
+                );
+
+        Matcher subjectMatcher =
+                subjectPattern.matcher(
+                        block
+                );
+
+        List<String> subjects =
+                new ArrayList<>();
+
+        if (subjectMatcher.find()) {
+
+            String subjectText =
+                    normalizeWhitespace(
+                            subjectMatcher.group(1)
+                    );
+
+            String[] subjectParts =
+                    subjectText.split(
+                            "\\s*-\\s*"
+                    );
+
+            for (String subjectPart :
+                    subjectParts) {
+
+                String subject =
+                        normalizeWhitespace(
+                                subjectPart
+                        );
+
+                if (!subject.isBlank()) {
+
+                    subjects.add(
+                            subject
+                    );
+                }
+            }
+
+            block =
+                    block
+                            .substring(
+                                    subjectMatcher.end()
+                            )
+                            .trim();
+        }
+
+        /*
+         * =================================================
+         * TESAURO
+         * =================================================
+         */
 
         Pattern tesauroPattern =
                 Pattern.compile(
@@ -848,7 +961,7 @@ public class JudicialFileParser
 
         /*
          * =================================================
-         * TEXTO NARRATIVO
+         * ÚLTIMA VOZ + TEXTO NARRATIVO
          * =================================================
          */
 
@@ -865,16 +978,24 @@ public class JudicialFileParser
                 );
 
         /*
-         * Ejemplos:
+         * Formatos posibles:
          *
-         * .El examen...
-         * .Cabe juzgar...
-         * .Ante la paralización...
+         * VOZ.El examen...
+         *
+         * VOZ.Cabe juzgar...
+         *
+         * o cuando el texto plano pierde
+         * el separador:
+         *
+         * VOZLa Cámara...
          */
 
         Pattern narrativePattern =
                 Pattern.compile(
                         "\\.(?=[A-ZÁÉÍÓÚÑ][a-záéíóúñ])"
+                                + "|"
+                                + "(?<=[A-ZÁÉÍÓÚÑ])"
+                                + "(?=[A-ZÁÉÍÓÚÑ][a-záéíóúñ])"
                 );
 
         Matcher narrativeMatcher =
@@ -887,6 +1008,11 @@ public class JudicialFileParser
             System.out.println(
                     "Bloque descartado: "
                             + "no se encontró texto narrativo"
+            );
+
+            System.out.println(
+                    "TAIL="
+                            + tail
             );
 
             return null;
@@ -910,45 +1036,47 @@ public class JudicialFileParser
          * =================================================
          * ÚLTIMA VOZ
          * =================================================
-         *
-         * En el texto plano no tenemos un delimitador
-         * seguro entre la última voz y el encabezado.
-         *
-         * Conservamos el comportamiento actual.
          */
 
-        if (starts.size() == 1) {
-
-            String beforeNarrative =
-                    normalizeWhitespace(
-                            tail.substring(
-                                    0,
-                                    narrativeStart - 1
-                            )
-                    );
-
-            String term =
-                    extractSingleThesaurusTerm(
-                            beforeNarrative
-                    );
-
-            if (term != null
-                    && !term.isBlank()) {
-
-                thesaurusTerms.add(
-                        term
+        String beforeNarrative =
+                normalizeWhitespace(
+                        tail.substring(
+                                0,
+                                narrativeMatcher.start()
+                        )
                 );
-            }
+
+        beforeNarrative =
+                beforeNarrative
+                        .replaceFirst(
+                                "\\.\\s*$",
+                                ""
+                        )
+                        .trim();
+
+        String lastTerm =
+                extractSingleThesaurusTerm(
+                        beforeNarrative
+                );
+
+        if (lastTerm != null
+                && !lastTerm.isBlank()) {
+
+            thesaurusTerms.add(
+                    lastTerm
+            );
         }
 
         return new SummaryData(
+                List.copyOf(
+                        subjects
+                ),
                 List.copyOf(
                         thesaurusTerms
                 ),
                 summaryText
         );
     }
-
     /*
      * =================================================
      * ÚNICA VOZ TESAURO

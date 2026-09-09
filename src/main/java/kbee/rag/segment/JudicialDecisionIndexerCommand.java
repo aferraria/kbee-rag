@@ -62,6 +62,8 @@ public class JudicialDecisionIndexerCommand
     private final int embeddingBatchSize;
 
     private final int commitEveryDocuments;
+    
+    private final int enrichmentBatchSize;
 
     /*
      * =================================================
@@ -95,7 +97,9 @@ public class JudicialDecisionIndexerCommand
             int embeddingBatchSize,
 
             @Value("${judicial-indexer.commit-every-documents:100}")
-            int commitEveryDocuments) {
+            int commitEveryDocuments,
+            @Value("${kbee.rag.enrichment-batch-size:4}")
+            int enrichmentBatchSize) {
 
         this.segmenter =
                 segmenter;
@@ -128,6 +132,10 @@ public class JudicialDecisionIndexerCommand
 
         this.commitEveryDocuments =
                 commitEveryDocuments;
+        
+        this.enrichmentBatchSize = 
+        		enrichmentBatchSize;
+
     }
 
     /*
@@ -345,7 +353,7 @@ public class JudicialDecisionIndexerCommand
     private Mono<Void> processTextFile(
             TextFile file) {
 
-        if (file == null) {
+        if (file == null || "sumario".equals(file.type())) {
             return Mono.empty();
         }
 
@@ -368,18 +376,39 @@ public class JudicialDecisionIndexerCommand
         )
 
         /*
-         * Enriquecimiento jurídico.
+         * =========================================
+         * Batch para enriquecimiento jurídico.
+         * =========================================
          */
-        .concatMap(
-                segmentEnhancer::enhance
+        .buffer(
+                enrichmentBatchSize
+        )
+
+//        .concatMap(
+//                segmentEnhancer::enhance
+//        )
+        .flatMap(
+                segmentEnhancer::enhance,
+                2
         )
 
         /*
-         * Batch para embeddings.
+         * El enhancer devuelve una lista.
+         */
+        .flatMapIterable(
+                enhancedSegments ->
+                        enhancedSegments
+        )
+
+        /*
+         * =========================================
+         * Batch para embeddings finales.
+         * =========================================
          */
         .buffer(
                 embeddingBatchSize
         )
+
         .concatMap(
                 this::embedBatch
         )
@@ -392,6 +421,7 @@ public class JudicialDecisionIndexerCommand
                 embeddedSegments ->
                         embeddedSegments
         )
+
         .concatMap(
                 segmentDao::add
         )
@@ -413,6 +443,7 @@ public class JudicialDecisionIndexerCommand
                     file.type(),
                     elapsedSeconds
             );
+
         })
 
         .doOnError(error -> {
@@ -431,6 +462,7 @@ public class JudicialDecisionIndexerCommand
                     elapsedSeconds,
                     error.getMessage()
             );
+
         });
     }
 

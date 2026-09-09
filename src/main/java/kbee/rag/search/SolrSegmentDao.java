@@ -5,10 +5,13 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -409,6 +412,23 @@ public class SolrSegmentDao
             document.addField(
                     "thesaurus_term",
                     terms
+            );
+        }
+        
+        List<String> subjects =
+                segment.metainfo()
+                        .get("subjects") instanceof List<?> list
+                                ? list.stream()
+                                        .filter(String.class::isInstance)
+                                        .map(String.class::cast)
+                                        .collect(Collectors.toCollection(ArrayList::new))
+                                : new ArrayList<>();
+
+        if (!subjects.isEmpty()) {
+
+            document.addField(
+                    "subjects",
+                    subjects
             );
         }
 

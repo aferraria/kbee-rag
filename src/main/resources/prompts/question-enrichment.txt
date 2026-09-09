@@ -1,212 +1,88 @@
+  TAREA
 
             Recibirás:
 
-            1. un TEXTO JUDICIAL;
+            1. una CONSULTA;
             2. una lista de TÉRMINOS candidatos de un tesauro.
 
             Debés realizar dos tareas independientes:
 
             A) evaluar los términos;
-            B) generar proposiciones jurídicas del TEXTO JUDICIAL.
-
-
-            CONTEXTO JURISDICCIONAL DEL CORPUS
-
-            Todos los textos provienen de fallos de la Provincia de Santa Fe.
-
-            Por lo tanto, salvo que el TEXTO JUDICIAL indique expresamente
-            otra jurisdicción, toda mención genérica a instituciones,
-            tribunales, autoridades o lugares debe interpretarse como
-            referida a la Provincia de Santa Fe.
-
-            Ejemplos:
-
-            - "esta Corte" o "la Corte" se interpreta como
-              "Corte Suprema de Justicia de la Provincia de Santa Fe";
-
-            - "la Provincia" se interpreta como
-              "Provincia de Santa Fe";
-
-            - una "Cámara de Apelación", si no se indica otra jurisdicción,
-              corresponde a una Cámara de Apelación de la Provincia de Santa Fe.
-
-            Esta regla puede utilizarse únicamente para determinar
-            la jurisdicción de una institución o lugar mencionado en el texto.
-
-            No puede utilizarse para inferir procedimientos, competencias,
-            normas, recursos, cargos, relaciones jerárquicas ni otros
-            conceptos que no estén expresados en el TEXTO JUDICIAL.
+            B) generar proposiciones jurídicas de la consulta.
 
 
             EVALUACION DE TERMINOS
 
             Evaluá cada término de forma independiente.
 
-            Un término está respaldado únicamente si:
+            Un término está respaldado si:
 
-            - aparece expresado en el TEXTO JUDICIAL; o
-
+            - aparece expresado en la CONSULTA; o
             - es una reformulación directa e inequívoca de algo expresado
-              en el TEXTO JUDICIAL.
+              en la CONSULTA.
 
-            No asumas información que no esté en el TEXTO JUDICIAL.
+            No asumas información que no esté en la CONSULTA.
 
             No uses los demás términos de la lista para decidir si un
             término está respaldado.
 
-            No selecciones un término solamente porque esté jurídicamente
-            relacionado con el contenido del texto.
-
-            No selecciones un término porque sea una categoría más general,
-            más específica o habitualmente asociada con algo mencionado
-            en el TEXTO JUDICIAL.
-            
-            No incluyas terminos cuyo conceptos sea opuesto a los expresados en el texto.
-            
-            No incluyas términos basándote en hechos o circunstancias que no estén expresados en el texto.
+            No tengas en cuenta relaciones jerárquicas entre términos ni
+            posibles conceptos del tesauro a los que puedan pertenecer.
 
             Si para considerar respaldado un término necesitás agregar un
-            sujeto, contexto, procedimiento, causa, consecuencia, condición,
-            institución, jerarquía o situación que no esté expresada en el
-            TEXTO JUDICIAL, indicá false.
+            sujeto, contexto, procedimiento, causa, consecuencia, condición
+            o situación que no esté expresada en la CONSULTA, indicá false.
 
-            Si tenés dudas, no lo seleccioness
+            Si tenés dudas, indicá false.
 
             Evaluá todos los términos de la lista.
 
 
-            REGLA DE IDENTIFICACION ESPECIFICA
-
-            Si relacionas un termino con una institución, esta relacion debe
-            ser clara y expresa y no debe necesitar ninguna inferencia ni
-            asunción de contexto
-
-
-            JUSTIFICACION Y AUTOVERIFICACION
-
-            Para cada término que inicialmente consideres true, debés
-            estar expresamente respaldado por texto si la necesidad de ningun
-            tipo de asuncion
-
-            No alcanza con que una palabra o una parte del término aparezca
-            en el texto.
-
-            No alcanza con que el término pueda inferirse mediante
-            conocimiento jurídico externo.
-
-            Después de formular la justificación, preguntate:
-
-            "¿Esta justificación demuestra con certeza que el significado
-            completo del término está respaldado por el TEXTO JUDICIAL?"
-
-            Conservá true únicamente si la respuesta es claramente SÍ.
-
-            Si la respuesta es NO, si hay duda, si existen varias
-            interpretaciones posibles o si la justificación requiere
-            agregar información no expresada, cambiá el valor a false.
-
-            Ante cualquier incertidumbre, el resultado obligatorio es false.
-
-            Los términos false no necesitan justificación.
-
-
-    REGLA SOBRE LA JUSTIFICACION
-
-Evalúa internamente cada término candidato y decide si corresponde seleccionarlo.
-
-Incluye un término únicamente cuando su significado completo esté respaldado
-con suficiente certeza por el TEXTO JUDICIAL.
-
-Si existe alguna duda sobre su respaldo, si el término no está expresado
-o mencionado, o si para seleccionarlo es necesaria una inferencia,
-NO lo incluyas en "terminos".
-
-Los términos descartados deben omitirse completamente de la respuesta.
-
-No expliques por qué un término fue descartado.
-No generes una entrada para un término descartado.
-No utilices "true", "false" ni ninguna otra marca para indicar
-el resultado de la evaluación.
-
-La justificación existe únicamente para los términos seleccionados.
-
-Para cada término seleccionado, la justificación debe indicar brevemente
-qué contenido concreto del TEXTO JUDICIAL respalda su selección.
-
             PROPOSICIONES
 
-            Generá proposiciones jurídicas únicamente a partir del
-            TEXTO JUDICIAL.
+            Generá proposiciones jurídicas únicamente a partir de la CONSULTA.
 
-            Cada proposición debe expresar una afirmación autónoma,
-            concreta y jurídicamente relevante que esté expresada
-            en el TEXTO JUDICIAL.
+            Una proposición debe expresar de forma autónoma y concisa una
+            cuestión jurídica contenida en la CONSULTA.
 
-            Podés reformular una afirmación para hacerla clara,
-            pero no amplíes su contenido.
+            No utilices los TÉRMINOS candidatos para generar las proposiciones.
 
-            No completes sujetos, tribunales, normas, procedimientos,
-            efectos, consecuencias ni calificaciones jurídicas que
-            no estén expresados en el TEXTO JUDICIAL.
+            Las proposiciones deben poder generarse exactamente de la misma
+            manera aunque la lista de TÉRMINOS no hubiera sido suministrada.
 
-            No utilices los TÉRMINOS candidatos para generar,
-            completar o ampliar las proposiciones.
+            No agregues hechos, causas, consecuencias, requisitos, decisiones,
+            obligaciones ni relaciones que no estén expresados en la CONSULTA.
 
-            Las proposiciones deben poder generarse de la misma
-            manera aunque la lista de TÉRMINOS no hubiera sido
-            suministrada.
-
-            Si una afirmación requiere inferencia o conocimiento
-            externo para formularse, no la generes.
+            No afirmes que existe un precedente ni que un tribunal resolvió
+            determinada cuestión si la CONSULTA solamente está solicitando
+            encontrar un precedente.
 
             Evitá proposiciones redundantes.
 
             Generá como máximo 10 proposiciones.
 
 
-			 FORMATO OBLIGATORIO
-			
-
-"terminos" es una lista de selección, no una lista de evaluación.
+            FORMATO OBLIGATORIO
+            
+            "terminos" es una lista de selección, no una lista de evaluación.
 
 Solo incluye en "terminos" los términos seleccionados.
 
 Los términos no seleccionados deben omitirse completamente.
 
-No generes un objeto JSON por cada término candidato.
+            Respondé únicamente con JSON válido con esta estructura:
 
-No incluyas evaluaciones negativas, descartes, "true" ni "false".
+            {
+              "terminos": {
+                "TERMINO 1": true,
+                "TERMINO 2": false
+              },
+              "propositions": [
+                "Proposición 1",
+                "Proposición 2"
+              ]
+            }
 
-Debes responder única y exclusivamente con un objeto JSON válido
-que siga estrictamente la siguiente estructura.
-			
-			No incluyas explicaciones, introducciones ni bloques de código Markdown.
-			
-			{
-			  "terminos": [
-			    {
-			      "termino": "Nombre exacto del Término 1",
-			      "justificacion": "Breve fragmento del texto que justifica la selección"
-			    },
-			    {
-			      "termino": "Nombre exacto del Término 2",
-			      "justificacion": "Breve fragmento del texto que justifica la selección"
-			    }
-			  ],
-			  "propositions": [
-			    "Proposición o conclusión jurídica derivada del análisis 1",
-			    "Proposición o conclusión jurídica derivada del análisis 2"
-			  ]
-			}
-			
-			Cada término candidato puede aparecer como máximo una vez en "terminos".
-			
-			Nunca repitas un término ya evaluado.
-			
-			No incluyas en "terminos" ningún término que no pertenezca a la lista
-			de términos candidatos recibidos.
-			
-			La cantidad de elementos de "terminos" nunca puede superar
-			la cantidad de términos candidatos recibidos.
-			
-			No agregues texto antes ni después del JSON.
+            No expliques ni justifiques las decisiones.
+
+            No agregues texto antes ni después del JSON.

@@ -2,6 +2,7 @@ package kbee.rag.segment;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 
 import kbee.rag.search.Concept;
 
@@ -18,7 +19,8 @@ public record TextSegment(
         String embeddingText,
         String documentType,
         List<Concept> concepts,
-        List<String> propositions
+        List<String> propositions,
+        Map<String, Object> metainfo
 ) {
 
     public TextSegment {
@@ -32,5 +34,10 @@ public record TextSegment(
                 propositions == null
                         ? List.of()
                         : List.copyOf(propositions);
+        
+        metainfo =
+                metainfo == null
+                        ? Map.of()
+                        : Map.copyOf(metainfo);
     }
 }

@@ -192,6 +192,144 @@ public class DefaultLegalTextEnhancer
                             });
                 });
     }
+    
+    @Override
+    public Mono<List<LegalEnhancement>> enhance(
+            List<String> texts,
+            String promptName) {
+
+        if (texts == null
+                || texts.isEmpty()) {
+
+            return Mono.just(
+                    List.of()
+            );
+        }
+
+        if (promptName == null
+                || promptName.isBlank()) {
+
+            return Mono.error(
+                    new IllegalArgumentException(
+                            "promptName must not be null or blank"
+                    )
+            );
+        }
+
+        /*
+         * Creamos los segmentos del batch manteniendo
+         * la posición original.
+         *
+         * Los IDs enviados al LLM son 1..N.
+         */
+        List<BatchInput> inputs =
+                java.util.stream.IntStream
+                        .range(
+                                0,
+                                texts.size()
+                        )
+                        .mapToObj(index ->
+                                new BatchInput(
+                                        index + 1,
+                                        texts.get(index)
+                                )
+                        )
+                        .toList();
+
+        /*
+         * Obtenemos candidatos para cada segmento.
+         */
+        return reactor.core.publisher.Flux
+                .fromIterable(
+                        inputs
+                )
+                .concatMap(input -> {
+
+                    String text =
+                            input.text();
+
+                    if (text == null
+                            || text.isBlank()) {
+
+                        return Mono.just(
+                                new BatchCandidateInput(
+                                        input.id(),
+                                        "",
+                                        List.of()
+                                )
+                        );
+                    }
+
+                    
+                    long startCandidates =
+                            System.nanoTime();
+                    return conceptExtractorService
+                            .candidates(
+                                    text
+                            )
+                            .doOnNext(result -> {
+
+                                long elapsed =
+                                        System.nanoTime()
+                                                - startCandidates;
+
+//                                System.out.printf(
+//                                        "CANDIDATES segment=%d time=%.3f s concepts=%d%n",
+//                                        input.id(),
+//                                        elapsed / 1_000_000_000.0,
+//                                        result.concepts() == null
+//                                                ? 0
+//                                                : result.concepts().size()
+//                                );
+                            })
+                            .defaultIfEmpty(
+                                    new ConceptExtraction(
+                                            List.of()
+                                    )
+                            )
+                            .map(extraction -> {
+
+                                List<Concept> candidateVoices =
+                                        extraction.concepts() == null
+                                                ? List.of()
+                                                : extraction.concepts()
+                                                        .stream()
+                                                        .filter(
+                                                                Objects::nonNull
+                                                        )
+                                                        .filter(concept ->
+                                                                concept.term() != null
+                                                                        && !concept
+                                                                                .term()
+                                                                                .isBlank()
+                                                        )
+                                                        /*
+                                                         * Mismo límite que
+                                                         * el procesamiento
+                                                         * individual.
+                                                         */
+                                                        .limit(
+                                                                60
+                                                        )
+                                                        .toList();
+
+                                return new BatchCandidateInput(
+                                        input.id(),
+                                        text,
+                                        candidateVoices
+                                );
+                            });
+                })
+                .collectList()
+                .flatMap(
+                        batchInputs ->
+                                enhanceBatch(
+                                        batchInputs,
+                                        promptName,
+                                        texts.size()
+                                )
+                );
+    }
 
     /*
      * =================================================
@@ -501,6 +639,360 @@ public class DefaultLegalTextEnhancer
                 .toString()
                 .trim();
     }
+    
+    private Mono<List<LegalEnhancement>> enhanceBatch(
+            List<BatchCandidateInput> inputs,
+            String promptName,
+            int originalSize) {
+
+        boolean hasText =
+                inputs.stream()
+                        .anyMatch(input ->
+                                input.text() != null
+                                        && !input.text().isBlank()
+                        );
+
+        if (!hasText) {
+            return Mono.just(
+                    java.util.stream.IntStream
+                            .range(0, originalSize)
+                            .mapToObj(index ->
+                                    emptyEnhancement()
+                            )
+                            .toList()
+            );
+        }
+
+        String data =
+                buildBatchTextData(
+                        inputs
+                );
+
+        String instructions =
+                instructionProvider.get(
+                        promptName
+                );
+
+        LlmRequest request =
+                new LlmRequest(
+                        instructions,
+                        data,
+                        buildBatchEnrichmentFormat(
+                                inputs
+                        )
+                );
+
+        return llmService
+                .generate(
+                        request
+                )
+                .map(response -> {
+
+                    BatchEvaluation evaluation =
+                            parseBatchEvaluation(
+                                    response
+                            );
+
+                    Map<Integer, BatchSegmentEvaluation> evaluationsById =
+                            new LinkedHashMap<>();
+
+                    if (evaluation.segments() != null) {
+
+                        for (BatchSegmentEvaluation segment :
+                                evaluation.segments()) {
+
+                            if (segment == null) {
+                                continue;
+                            }
+
+                            evaluationsById.putIfAbsent(
+                                    segment.id(),
+                                    segment
+                            );
+                        }
+                    }
+
+                    List<LegalEnhancement> result =
+                            new java.util.ArrayList<>(
+                                    inputs.size()
+                            );
+
+                    for (BatchCandidateInput input :
+                            inputs) {
+
+                        if (input.text() == null
+                                || input.text().isBlank()) {
+
+                            result.add(
+                                    emptyEnhancement()
+                            );
+
+                            continue;
+                        }
+
+                        BatchSegmentEvaluation segmentEvaluation =
+                                evaluationsById.get(
+                                        input.id()
+                                );
+
+                        if (segmentEvaluation == null) {
+
+                            throw new IllegalStateException(
+                                    "El LLM no devolvió el segmento "
+                                            + input.id()
+                            );
+                        }
+
+                        List<String> selectedTerms =
+                                normalizeTerms(
+                                        segmentEvaluation.terminos()
+                                );
+
+                        /*
+                         * Cada segmento se reconstruye exclusivamente
+                         * contra sus propios candidatos.
+                         */
+                        List<Concept> voices =
+                                rebuildSupportedVoicesFromTerms(
+                                        input.candidateVoices(),
+                                        selectedTerms
+                                );
+
+                        List<String> propositions =
+                                normalizePropositions(
+                                        segmentEvaluation.propositions()
+                                );
+
+                        String legalText =
+                                formatLegalText(
+                                        voices,
+                                        propositions
+                                );
+
+                        result.add(
+                                new LegalEnhancement(
+                                        legalText,
+                                        voices,
+                                        propositions
+                                )
+                        );
+                    }
+
+                    return List.copyOf(
+                            result
+                    );
+                });
+    }
+    
+    private List<String> normalizeTerms(
+            List<String> terms) {
+
+        if (terms == null
+                || terms.isEmpty()) {
+
+            return List.of();
+        }
+
+        return terms.stream()
+                .filter(
+                        Objects::nonNull
+                )
+                .map(
+                        String::trim
+                )
+                .filter(term ->
+                        !term.isBlank()
+                )
+                .distinct()
+                .toList();
+    }
+
+    private List<String> normalizePropositions(
+            List<String> propositions) {
+
+        if (propositions == null
+                || propositions.isEmpty()) {
+
+            return List.of();
+        }
+
+        return propositions.stream()
+                .filter(
+                        Objects::nonNull
+                )
+                .map(
+                        String::trim
+                )
+                .filter(value ->
+                        !value.isBlank()
+                )
+                .distinct()
+                .toList();
+    }
+
+    private LegalEnhancement emptyEnhancement() {
+
+        return new LegalEnhancement(
+                "",
+                List.of(),
+                List.of()
+        );
+    }
+    
+    private String buildBatchTextData(
+            List<BatchCandidateInput> inputs) {
+
+        StringBuilder data =
+                new StringBuilder();
+
+        for (BatchCandidateInput input :
+                inputs) {
+
+            if (input.text() == null
+                    || input.text().isBlank()) {
+
+                continue;
+            }
+
+            List<String> terms =
+                    input.candidateVoices() == null
+                            ? List.of()
+                            : input.candidateVoices()
+                                    .stream()
+                                    .filter(
+                                            Objects::nonNull
+                                    )
+                                    .map(
+                                            Concept::term
+                                    )
+                                    .filter(
+                                            Objects::nonNull
+                                    )
+                                    .flatMap(voice ->
+                                            Arrays.stream(
+                                                    voice.split(">")
+                                            )
+                                    )
+                                    .map(
+                                            String::trim
+                                    )
+                                    .filter(term ->
+                                            !term.isBlank()
+                                    )
+                                    .distinct()
+                                    .toList();
+
+            String termsText =
+                    terms.isEmpty()
+                            ? "(sin términos)"
+                            : String.join(
+                                    "\n",
+                                    terms
+                            );
+
+            data.append(
+                    "=== SEGMENTO ===\n"
+            );
+
+            data.append(
+                    "ID: "
+            );
+
+            data.append(
+                    input.id()
+            );
+
+            data.append(
+                    "\n\n"
+            );
+
+            data.append(
+                    "=== TEXTO ===\n\n"
+            );
+
+            data.append(
+                    input.text()
+            );
+
+            data.append(
+                    "\n\n"
+            );
+
+            data.append(
+                    "=== TERMINOS CANDIDATOS ===\n\n"
+            );
+
+            data.append(
+                    termsText
+            );
+
+            data.append(
+                    "\n\n"
+            );
+
+            data.append(
+                    "=== FIN SEGMENTO ===\n\n"
+            );
+        }
+
+        return data
+                .toString()
+                .trim();
+    }
+    
+    private List<Concept> rebuildSupportedVoicesFromTerms(
+            List<Concept> candidateVoices,
+            List<String> selectedTerms) {
+
+        if (candidateVoices == null
+                || candidateVoices.isEmpty()
+                || selectedTerms == null
+                || selectedTerms.isEmpty()) {
+
+            return List.of();
+        }
+
+        Set<String> supportedTerms =
+                selectedTerms.stream()
+                        .filter(
+                                Objects::nonNull
+                        )
+                        .map(
+                                String::trim
+                        )
+                        .filter(term ->
+                                !term.isBlank()
+                        )
+                        .collect(
+                                Collectors.toSet()
+                        );
+
+        return candidateVoices.stream()
+                .filter(
+                        Objects::nonNull
+                )
+                .filter(concept ->
+                        concept.term() != null
+                                && !concept.term()
+                                        .isBlank()
+                )
+                .filter(concept ->
+                        Arrays.stream(
+                                concept.term()
+                                        .split(">")
+                        )
+                        .map(
+                                String::trim
+                        )
+                        .filter(term ->
+                                !term.isBlank()
+                        )
+                        .allMatch(
+                                supportedTerms::contains
+                        )
+                )
+                .toList();
+    }
 
     /*
      * =================================================
@@ -723,12 +1215,254 @@ public class DefaultLegalTextEnhancer
                 termsText
         );
     }
+    
+    private Map<String, Object> buildBatchEnrichmentFormat(
+            List<BatchCandidateInput> inputs) {
+
+        Map<String, Object> termsSchema =
+                new LinkedHashMap<>();
+
+        termsSchema.put(
+                "type",
+                "array"
+        );
+
+        termsSchema.put(
+                "items",
+                Map.of(
+                        "type",
+                        "string"
+                )
+        );
+
+        termsSchema.put(
+                "maxItems",
+                60
+        );
+
+        Map<String, Object> propositionsSchema =
+                new LinkedHashMap<>();
+
+        propositionsSchema.put(
+                "type",
+                "array"
+        );
+
+        propositionsSchema.put(
+                "items",
+                Map.of(
+                        "type",
+                        "string"
+                )
+        );
+
+        propositionsSchema.put(
+                "maxItems",
+                20
+        );
+
+        Map<String, Object> segmentProperties =
+                new LinkedHashMap<>();
+
+        segmentProperties.put(
+                "id",
+                Map.of(
+                        "type",
+                        "integer",
+                        "minimum",
+                        1,
+                        "maximum",
+                        inputs.size()
+                )
+        );
+
+        segmentProperties.put(
+                "terminos",
+                termsSchema
+        );
+
+        segmentProperties.put(
+                "propositions",
+                propositionsSchema
+        );
+
+        Map<String, Object> segmentSchema =
+                new LinkedHashMap<>();
+
+        segmentSchema.put(
+                "type",
+                "object"
+        );
+
+        segmentSchema.put(
+                "properties",
+                segmentProperties
+        );
+
+        segmentSchema.put(
+                "required",
+                List.of(
+                        "id",
+                        "terminos",
+                        "propositions"
+                )
+        );
+
+        segmentSchema.put(
+                "additionalProperties",
+                false
+        );
+
+        Map<String, Object> segmentsSchema =
+                new LinkedHashMap<>();
+
+        segmentsSchema.put(
+                "type",
+                "array"
+        );
+
+        segmentsSchema.put(
+                "items",
+                segmentSchema
+        );
+
+        segmentsSchema.put(
+                "maxItems",
+                inputs.size()
+        );
+
+        Map<String, Object> properties =
+                new LinkedHashMap<>();
+
+        properties.put(
+                "segments",
+                segmentsSchema
+        );
+
+        Map<String, Object> schema =
+                new LinkedHashMap<>();
+
+        schema.put(
+                "type",
+                "object"
+        );
+
+        schema.put(
+                "properties",
+                properties
+        );
+
+        schema.put(
+                "required",
+                List.of(
+                        "segments"
+                )
+        );
+
+        schema.put(
+                "additionalProperties",
+                false
+        );
+
+        return schema;
+    }
+    
+    private BatchEvaluation parseBatchEvaluation(
+            String response) {
+
+        if (response == null
+                || response.isBlank()) {
+
+            return new BatchEvaluation(
+                    List.of()
+            );
+        }
+
+        String json =
+                response.trim();
+
+        try {
+
+            return objectMapper.readValue(
+                    json,
+                    BatchEvaluation.class
+            );
+
+        } catch (Exception firstException) {
+
+            System.err.println(
+                    "===== INVALID BATCH LLM JSON ====="
+            );
+
+            System.err.println(
+                    "length = "
+                            + json.length()
+            );
+
+            System.err.println(
+                    "tail = "
+                            + json.substring(
+                                    Math.max(
+                                            0,
+                                            json.length() - 1000
+                                    )
+                            )
+            );
+
+            String repaired =
+                    repairJson(
+                            json
+                    );
+
+            try {
+
+                return objectMapper.readValue(
+                        repaired,
+                        BatchEvaluation.class
+                );
+
+            } catch (Exception secondException) {
+
+                throw new IllegalStateException(
+                        "No se pudo interpretar "
+                                + "la respuesta batch del LLM: "
+                                + response,
+                        secondException
+                );
+            }
+        }
+    }
 
     /*
      * =================================================
      * DTO INTERNOS
      * =================================================
      */
+    
+    private record BatchInput(
+            int id,
+            String text
+    ) {
+    }
+
+    private record BatchCandidateInput(
+            int id,
+            String text,
+            List<Concept> candidateVoices
+    ) {
+    }
+
+    private record BatchSegmentEvaluation(
+            int id,
+            List<String> terminos,
+            List<String> propositions
+    ) {
+    }
+
+    private record BatchEvaluation(
+            List<BatchSegmentEvaluation> segments
+    ) {
+    }
 
     private record TermDecision(
             String termino,

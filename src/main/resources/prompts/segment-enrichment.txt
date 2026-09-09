@@ -81,58 +81,6 @@
             ser clara y expresa y no debe necesitar ninguna inferencia ni
             asunción de contexto
 
-
-            JUSTIFICACION Y AUTOVERIFICACION
-
-            Para cada término que inicialmente consideres true, debés
-            estar expresamente respaldado por texto si la necesidad de ningun
-            tipo de asuncion
-
-            No alcanza con que una palabra o una parte del término aparezca
-            en el texto.
-
-            No alcanza con que el término pueda inferirse mediante
-            conocimiento jurídico externo.
-
-            Después de formular la justificación, preguntate:
-
-            "¿Esta justificación demuestra con certeza que el significado
-            completo del término está respaldado por el TEXTO JUDICIAL?"
-
-            Conservá true únicamente si la respuesta es claramente SÍ.
-
-            Si la respuesta es NO, si hay duda, si existen varias
-            interpretaciones posibles o si la justificación requiere
-            agregar información no expresada, cambiá el valor a false.
-
-            Ante cualquier incertidumbre, el resultado obligatorio es false.
-
-            Los términos false no necesitan justificación.
-
-
-    REGLA SOBRE LA JUSTIFICACION
-
-Evalúa internamente cada término candidato y decide si corresponde seleccionarlo.
-
-Incluye un término únicamente cuando su significado completo esté respaldado
-con suficiente certeza por el TEXTO JUDICIAL.
-
-Si existe alguna duda sobre su respaldo, si el término no está expresado
-o mencionado, o si para seleccionarlo es necesaria una inferencia,
-NO lo incluyas en "terminos".
-
-Los términos descartados deben omitirse completamente de la respuesta.
-
-No expliques por qué un término fue descartado.
-No generes una entrada para un término descartado.
-No utilices "true", "false" ni ninguna otra marca para indicar
-el resultado de la evaluación.
-
-La justificación existe únicamente para los términos seleccionados.
-
-Para cada término seleccionado, la justificación debe indicar brevemente
-qué contenido concreto del TEXTO JUDICIAL respalda su selección.
-
             PROPOSICIONES
 
             Generá proposiciones jurídicas únicamente a partir del

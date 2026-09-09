@@ -110,14 +110,28 @@
             Los términos false no necesitan justificación.
 
 
-            REGLA SOBRE LA JUSTIFICACION
+    REGLA SOBRE LA JUSTIFICACION
 
-            La justificación debe indicar la razon de la seleccion del termino
-            y si hay alguna duda de su respaldo para su seleccion o el termino no se incluye o menciona, 
-            terminar la justificacion con la palabra false
-            
-            Si la justificación de la selección de un termino termina con la palabra false, no incluyas el termino en la lista de seleccionados.   
+Evalúa internamente cada término candidato y decide si corresponde seleccionarlo.
 
+Incluye un término únicamente cuando su significado completo esté respaldado
+con suficiente certeza por el TEXTO JUDICIAL.
+
+Si existe alguna duda sobre su respaldo, si el término no está expresado
+o mencionado, o si para seleccionarlo es necesaria una inferencia,
+NO lo incluyas en "terminos".
+
+Los términos descartados deben omitirse completamente de la respuesta.
+
+No expliques por qué un término fue descartado.
+No generes una entrada para un término descartado.
+No utilices "true", "false" ni ninguna otra marca para indicar
+el resultado de la evaluación.
+
+La justificación existe únicamente para los términos seleccionados.
+
+Para cada término seleccionado, la justificación debe indicar brevemente
+qué contenido concreto del TEXTO JUDICIAL respalda su selección.
 
             PROPOSICIONES
 
@@ -152,12 +166,19 @@
 
 			 FORMATO OBLIGATORIO
 			
-			Solo incluye en "terminos" los términos seleccionados.
-			
-			Los términos no seleccionados no deben aparecer en la respuesta.
-			
-			Debes responder única y exclusivamente con un objeto JSON válido
-			que siga estrictamente la siguiente estructura.
+
+"terminos" es una lista de selección, no una lista de evaluación.
+
+Solo incluye en "terminos" los términos seleccionados.
+
+Los términos no seleccionados deben omitirse completamente.
+
+No generes un objeto JSON por cada término candidato.
+
+No incluyas evaluaciones negativas, descartes, "true" ni "false".
+
+Debes responder única y exclusivamente con un objeto JSON válido
+que siga estrictamente la siguiente estructura.
 			
 			No incluyas explicaciones, introducciones ni bloques de código Markdown.
 			

@@ -3,6 +3,7 @@ package kbee.rag;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -127,7 +128,7 @@ Añadió que si la implementación de este sistema legal genera afectaciones de 
         Antecedentes acerca de un policía que mató a ladrones en Rosario. Fue condenado por una filmación y luego la Corte revirtió la sentencia.
                 """;
         
-        String text = q3;      		
+        String text = segmentText9      		
         		;
         
         
@@ -147,7 +148,8 @@ Añadió que si la implementación de este sistema legal genera afectaciones de 
                         text,
                         "fallo",
                         List.of(),
-                        List.of()
+                        List.of(),
+                        Map.of()
                 );
 
         
