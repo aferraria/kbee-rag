@@ -137,6 +137,14 @@ public class JudicialDocumentDao
         })
         .collectList();
     }
+    
+    public String getDocumentId(ExpandedSource source) {
+    	String sourceId = source.selected().documentId();
+    	String s[] = sourceId.split("-");
+    	return s.length == 2
+    		? s[1]
+    		: s[2];		
+    }
 
     /*
      * =================================================

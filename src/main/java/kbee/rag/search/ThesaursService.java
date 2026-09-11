@@ -617,19 +617,35 @@ public class ThesaursService {
         List<String> windows =
                 new ArrayList<>();
 
+//        addWindows(
+//                windows,
+//                words,
+//                16,
+//                8,
+//                6
+//        );
+//
+//        addWindows(
+//                windows,
+//                words,
+//                8,
+//                4,
+//                4
+//        );
+        
         addWindows(
                 windows,
                 words,
-                16,
-                8,
+                24,
+                12,
                 6
         );
 
         addWindows(
                 windows,
                 words,
-                8,
-                4,
+                12,
+                6,
                 4
         );
 
@@ -1517,14 +1533,28 @@ public class ThesaursService {
     private String toSolrVector(
             List<Float> vector) {
 
-        return vector.stream()
-                .map(String::valueOf)
-                .collect(
-                        Collectors.joining(
-                                ",",
-                                "[",
-                                "]"
-                        )
+        StringBuilder sb =
+                new StringBuilder(
+                        vector.size() * 12
                 );
+
+        sb.append('[');
+
+        for (int i = 0;
+                i < vector.size();
+                i++) {
+
+            if (i > 0) {
+                sb.append(',');
+            }
+
+            sb.append(
+                    vector.get(i)
+            );
+        }
+
+        sb.append(']');
+
+        return sb.toString();
     }
 }

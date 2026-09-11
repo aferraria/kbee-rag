@@ -43,8 +43,14 @@ public class LlmRerankerService
             RerankRequest request,
             int topK) {
 
+        //List<ExpandedSource> candidates =
+        //        request.candidates();
+  
         List<ExpandedSource> candidates =
-                request.candidates();
+                request.candidates()
+                        .stream()
+                        .limit(topK)
+                        .toList();
 
         String input =
                 buildInput(
@@ -186,7 +192,105 @@ public class LlmRerankerService
         }
     }
     
+    private String buildRerankerText3(
+            ExpandedSource source) {
+
+        SegmentSearchResult selected =
+                source.selected();
+
+        StringBuilder text =
+                new StringBuilder();
+
+        if (selected.documentTitle() != null
+                && !selected.documentTitle().isBlank()) {
+
+            text.append("Título: ")
+                    .append(selected.documentTitle())
+                    .append("\n");
+        }
+
+        if (selected.sectionPath() != null
+                && !selected.sectionPath().isBlank()) {
+
+            text.append("Sección: ")
+                    .append(selected.sectionPath())
+                    .append("\n");
+        }
+
+        if (selected.text() != null
+                && !selected.text().isBlank()) {
+
+            text.append("\n")
+                    .append(selected.text());
+        }
+
+        return text.toString().trim();
+    }
+
     private String buildRerankerText(
+            ExpandedSource source) {
+
+        StringBuilder text =
+                new StringBuilder();
+
+        SegmentSearchResult selected =
+                source.selected();
+
+        if (selected.documentTitle() != null
+                && !selected.documentTitle().isBlank()) {
+
+            text.append("Título: ")
+                    .append(selected.documentTitle())
+                    .append("\n\n");
+        }
+
+        if (selected.sectionPath() != null
+                && !selected.sectionPath().isBlank()) {
+
+            text.append("Sección: ")
+                    .append(selected.sectionPath())
+                    .append("\n\n");
+        }
+
+        if (selected.text() != null
+                && !selected.text().isBlank()) {
+
+            text.append(selected.text())
+                    .append("\n\n");
+        }
+
+        int selectedNumber =
+                selected.segmentNumber();
+
+        source.contextSegments()
+                .stream()
+                .filter(segment ->
+                        Math.abs(
+                                segment.segmentNumber()
+                                        - selectedNumber
+                        ) <= 1
+                )
+                .sorted(
+                        java.util.Comparator.comparingInt(
+                                SegmentSearchResult::segmentNumber
+                        )
+                )
+                .forEach(segment -> {
+
+                    if (segment.text() != null
+                            && !segment.text().isBlank()) {
+
+                        text.append(segment.text())
+                                .append("\n\n");
+                    }
+                });
+
+        return text
+                .toString()
+                .trim();
+    }
+    
+    private String buildRerankerText2(
             ExpandedSource source) {
 
         StringBuilder text =

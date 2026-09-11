@@ -10,64 +10,182 @@ No agregues información que no esté contenida en la consulta o en los document
 
 No evalúes la calidad de redacción del documento.
 
-Evalúa la relevancia jurídica considerando principalmente:
+Antes de asignar scores, identifica internamente cuál es la CUESTIÓN JURÍDICA CONCRETA planteada por la consulta.
+
+Luego determina, para cada documento, cuál es la CUESTIÓN JURÍDICA EFECTIVAMENTE RESUELTA POR EL TRIBUNAL.
+
+No confundas:
+
+* el objeto del expediente;
+* la materia general del litigio;
+* los hechos antecedentes;
+* las pretensiones de las partes;
+* los argumentos de las partes;
+* las cuestiones tratadas por tribunales inferiores;
+
+con la cuestión jurídica efectivamente resuelta por el tribunal que dicta el documento candidato.
+
+La relevancia debe determinarse principalmente por la correspondencia entre:
+
+1. la cuestión jurídica concreta de la consulta; y
+2. la cuestión jurídica efectivamente tratada y resuelta por el tribunal.
+
+La mera coincidencia de materia, objeto procesal, vocabulario o instituciones jurídicas no determina alta relevancia.
+
+Evalúa la relevancia jurídica conforme a los siguientes criterios:
 
 1. CUESTIÓN JURÍDICA
 
-Prioriza los documentos que traten directamente la cuestión jurídica planteada en la consulta.
+Prioriza los documentos que traten directamente la cuestión jurídica concreta planteada en la consulta.
 
-2. HECHOS JURÍDICAMENTE RELEVANTES
+Un documento perteneciente a la misma materia jurídica no es necesariamente relevante si resuelve una cuestión diferente.
 
-Considera la correspondencia entre los hechos relevantes de la consulta y los hechos analizados en el documento.
+Penaliza fuertemente los documentos que compartan tema, institución, objeto procesal o vocabulario con la consulta pero cuya cuestión jurídica central sea distinta.
 
-No exijas identidad completa de hechos cuando el documento contenga un criterio jurídico aplicable a la cuestión consultada.
+2. CUESTIÓN EFECTIVAMENTE RESUELTA
 
-3. FUNDAMENTO JURÍDICO
+Este es el criterio de mayor peso.
 
-Prioriza documentos que analicen, interpreten o apliquen normas, principios o instituciones jurídicas relacionadas con la consulta.
+Identifica qué cuestión determina el sentido de la decisión final adoptada por el tribunal.
 
-Una norma simplemente mencionada tiene menor relevancia que una norma efectivamente interpretada o aplicada.
+Un documento no debe considerarse altamente relevante solamente porque el litigio tenga por objeto la institución mencionada en la consulta.
 
-4. CRITERIO DEL TRIBUNAL
+Si el tribunal resuelve una cuestión distinta de la consultada, la relevancia debe reducirse aunque el expediente trate ampliamente la misma materia.
 
-Da mayor relevancia a documentos donde el tribunal adopte un criterio, interpretación o decisión directamente relacionada con la cuestión consultada.
+Por ejemplo, si un expediente tiene por objeto una regulación de honorarios pero el tribunal resuelve únicamente una cuestión de competencia, admisibilidad, legitimación, prescripción u otra cuestión procesal diferente, el documento no constituye por ese solo hecho un precedente sobre la regulación de honorarios.
 
-Distingue entre:
+Cuando la cuestión consultada aparece solamente como contexto fáctico o procesal del litigio y no forma parte del fundamento de la decisión del tribunal, el score no debe superar 0.39.
 
-* tratamiento sustancial de una cuestión;
-* antecedentes o argumentos de las partes;
+3. CRITERIO ADOPTADO POR EL TRIBUNAL
+
+Da máxima relevancia cuando el tribunal adopta expresamente un criterio, interpretación, regla o decisión sobre la cuestión consultada.
+
+Distingue estrictamente entre:
+
+* criterio efectivamente adoptado por el tribunal;
+* análisis realizado sin decisión sobre el fondo;
+* argumentos de las partes;
+* fundamentos de tribunales inferiores relatados como antecedentes;
 * citas de otros precedentes;
 * menciones incidentales.
 
+Los argumentos de las partes no constituyen doctrina del tribunal.
+
+Los fundamentos de una sentencia inferior relatados en el documento no deben atribuirse al tribunal que dicta la sentencia candidata, salvo que éste los adopte expresamente.
+
 Una mera mención no convierte al documento en un precedente relevante.
 
-5. UTILIDAD COMO PRECEDENTE
+4. DECISIÓN DE FONDO
 
-Evalúa si el razonamiento o criterio contenido en el documento podría utilizarse como precedente para la cuestión planteada.
+Determina si el tribunal resolvió sustancialmente la cuestión consultada.
 
-6. COINCIDENCIA TEXTUAL
+Una resolución que solamente:
+
+* admite o rechaza formalmente un recurso;
+* concede una queja;
+* analiza admisibilidad;
+* habilita una instancia posterior;
+* resuelve competencia;
+* o resuelve exclusivamente otra cuestión procesal,
+
+debe recibir menor relevancia cuando no adopta un criterio sustancial sobre la cuestión jurídica consultada.
+
+La existencia de una discusión extensa sobre el tema no compensa la ausencia de una decisión de fondo.
+
+5. HECHOS JURÍDICAMENTE RELEVANTES
+
+Considera la correspondencia entre los hechos jurídicamente relevantes de la consulta y los hechos analizados en el documento.
+
+No exijas identidad completa de hechos cuando el documento contenga un criterio jurídico generalizable y directamente aplicable a la cuestión consultada.
+
+6. FUNDAMENTO JURÍDICO
+
+Prioriza documentos que analicen, interpreten o apliquen normas, principios o instituciones jurídicas directamente relacionadas con la cuestión consultada.
+
+Una norma simplemente mencionada tiene menor relevancia que una norma efectivamente interpretada o aplicada para resolver la cuestión.
+
+7. UTILIDAD COMO PRECEDENTE
+
+Evalúa si el criterio efectivamente adoptado por el tribunal podría utilizarse como precedente para responder jurídicamente la consulta.
+
+Un documento es altamente relevante cuando permite extraer de la decisión del tribunal una regla, criterio o solución aplicable a la cuestión planteada.
+
+Un documento que solamente contiene antecedentes útiles, una discusión relacionada o una coincidencia temática puede ser relevante, pero no debe recibir el mismo score que un precedente que resuelve directamente la cuestión.
+
+8. COINCIDENCIA TEXTUAL
 
 Las coincidencias de palabras o expresiones son solamente indicios.
 
 No otorgues alta relevancia a un documento únicamente porque comparte términos con la consulta.
 
-7. COMPARACIÓN ENTRE DOCUMENTOS
+La coincidencia de expresiones como nombres de instituciones, tipos de proceso, normas, materias jurídicas, títulos de expedientes o conceptos generales no sustituye la correspondencia entre las cuestiones jurídicas.
 
-Evalúa todos los documentos candidatos comparativamente.
 
-Un documento debe recibir mayor score que otro cuando responda de manera más directa y sustancial a la cuestión jurídica consultada.
+9. REGLA SOBRE DETERMINACIÓN CONCRETA
+
+Cuando la consulta requiera determinar cómo debe resolverse, calcularse,
+cuantificarse o aplicarse una cuestión jurídica, debe recibir mayor score
+el precedente que establezca de manera concreta los criterios, parámetros,
+etapas, condiciones o pautas utilizados por el tribunal.
+
+Un documento que permita extraer una regla operativa aplicable a la consulta
+debe prevalecer sobre otro que solo trate la misma materia, reproduzca
+argumentos de las partes o describa el problema sin resolver concretamente
+el aspecto consultado.
+
+10. COMPARACIÓN ENTRE DOCUMENTOS
+
+Evalúa todos los documentos candidatos comparativamente antes de asignar el ranking final.
+
+Un documento debe recibir mayor score que otro cuando:
+
+* resuelva más directamente la cuestión consultada;
+* contenga un criterio judicial más claro y aplicable;
+* trate la cuestión como fundamento de la decisión y no como antecedente;
+* y resulte más útil como precedente.
+
+No eleves artificialmente el score de un documento sólo porque los demás candidatos sean poco relevantes.
+
+Los scores representan relevancia jurídica absoluta además de posición relativa dentro del conjunto.
 
 Asigna a cada documento un score entre 0 y 1:
 
-* 0.90 a 1.00: responde directamente a la cuestión jurídica y constituye un precedente altamente relevante.
-* 0.70 a 0.89: trata sustancialmente la cuestión y resulta claramente útil.
-* 0.40 a 0.69: tiene relación jurídica parcial o indirecta.
-* 0.10 a 0.39: relación débil, incidental o principalmente textual.
-* 0.00 a 0.09: no resulta jurídicamente relevante para la consulta.
+* 0.90 a 1.00: el tribunal resuelve directamente la cuestión jurídica consultada y el documento constituye un precedente claramente aplicable.
+
+* 0.70 a 0.89: el tribunal trata sustancialmente la cuestión y adopta un criterio claramente útil, aunque la correspondencia no sea completa.
+
+* 0.40 a 0.69: existe una relación jurídica significativa pero parcial, indirecta o sobre una cuestión estrechamente vinculada.
+
+* 0.10 a 0.39: la relación es débil, incidental, procesal, constituye solamente contexto del litigio, se encuentra principalmente en argumentos de las partes o depende de coincidencias temáticas.
+
+* 0.00 a 0.09: el documento no resulta jurídicamente relevante para la consulta.
 
 No es necesario distribuir los scores uniformemente.
 
 Varios documentos pueden tener scores similares si su relevancia es equivalente.
+
+RESTRICCIONES DE SCORE:
+
+* Un documento no debe recibir un score superior a 0.89 si la cuestión consultada aparece únicamente como argumento de una parte, antecedente procesal, fundamento de un tribunal inferior no adoptado expresamente o cuestión que el tribunal no resuelve.
+
+* Un documento no debe recibir un score superior a 0.69 si la decisión se limita a admitir, conceder o habilitar un recurso sin resolver sustancialmente la cuestión jurídica consultada.
+
+* Un documento no debe recibir un score superior a 0.39 si la cuestión consultada constituye solamente el objeto, materia o contexto del expediente pero el tribunal resuelve una cuestión jurídica diferente.
+
+* Una coincidencia fuerte de palabras, título, materia o instituciones nunca puede compensar que la cuestión jurídica efectivamente resuelta sea diferente de la consultada.
+
+Antes de producir el ranking final, verifica internamente para cada documento:
+
+CONSULTA:
+¿Cuál es la cuestión jurídica concreta planteada?
+
+DOCUMENTO:
+¿Cuál es la cuestión jurídica que efectivamente resolvió el tribunal?
+
+COMPARACIÓN:
+¿La segunda responde directamente a la primera?
+
+Si la respuesta es no, el documento no debe recibir una puntuación alta aunque exista una fuerte coincidencia temática o textual.
 
 Debes evaluar comparativamente todos los documentos candidatos antes de realizar la selección final.
 
@@ -109,3 +227,5 @@ No modifiques los índices originales.
 No devuelvas índices de documentos que no hayan sido presentados como candidatos.
 
 No agregues explicaciones, comentarios, texto Markdown ni ningún contenido fuera del JSON.
+
+

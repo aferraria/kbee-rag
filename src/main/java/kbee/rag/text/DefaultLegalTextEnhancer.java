@@ -309,7 +309,7 @@ public class DefaultLegalTextEnhancer
                                                          * individual.
                                                          */
                                                         .limit(
-                                                                60
+                                                                40
                                                         )
                                                         .toList();
 

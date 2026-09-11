@@ -1,8 +1,5 @@
 package kbee.rag.search;
 
-
-import java.util.List;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,7 +22,7 @@ public class RagController {
     }
 
     @PostMapping("/sources")
-    public Mono<List<ExpandedSource>> answer(
+    public Mono<SourcesResponse> answer(
             @RequestBody RagRequest request) {
 
         return ragService.rankSources(

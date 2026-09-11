@@ -1,5 +1,8 @@
 package kbee.rag.search;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -100,7 +103,7 @@ public class RagService {
         );
     }
     
-    public Mono<List<ExpandedSource>> rankSources(
+    public Mono<SourcesResponse> rankSources(
             RagRequest request) {
     	
         AuditContext auditContext =
@@ -112,16 +115,25 @@ public class RagService {
         return doRankSources(request)
                 .flatMap(sources -> {
 
-                    AuditRecord record =
-                            auditContext.finish();
+                	AuditRecord record =
+                	        auditContext.finish();
 
-                    System.out.println(
-                            "===== AUDIT RECORD ====="
-                    );
+                	long totalMillis =
+                	        Duration.between(
+                	                record.startedAt(),
+                	                record.finishedAt()
+                	        ).toMillis();
 
-                    System.out.println(
-                            record
-                    );
+                	System.out.println(
+                	        "===== AUDIT RECORD ====="
+                	);
+
+                	System.out.println(record);
+
+                	System.out.printf(
+                	        "===== TOTAL: %.2f s =====%n",
+                	        totalMillis / 1000.0
+                	);
 
                     return Mono.just(
                             sources
@@ -136,7 +148,7 @@ public class RagService {
     }
 
     
-    public Mono<List<ExpandedSource>> doRankSources(
+    public Mono<SourcesResponse> doRankSources(
             RagRequest request) {
 
         String question =
@@ -154,14 +166,12 @@ public class RagService {
                         topK
                 )
                 .collectList()
-
                 .flatMap(results ->
                         documentDao.getSources(
                                 results,
                                 question
                         )
                 )
-
                 .flatMap(sources ->
                         rerank(
                                 question,
@@ -169,23 +179,27 @@ public class RagService {
                                 topK
                         )
                 )
-
-                .doOnNext(sources -> {
+                .flatMap(rerankedSources ->
+                        generateSourcesResponse(
+                                question,
+                                rerankedSources
+                        )
+                )
+                .doOnNext(response -> {
 
                     System.out.println(
                             "===== RERANKED SOURCES ====="
                     );
 
-                    for (ExpandedSource source : sources) {
+                    for (Source source : response.sources()) {
 
                         System.out.println(
-                                source.selected().documentId()
+                                source.documentId()
                                         + " "
-                                        + source.selected().documentTitle()
+                                        + source.documentTitle()
                         );
                     }
                 })
-
                 .doOnError(error -> {
 
                     System.err.println(
@@ -306,6 +320,48 @@ public class RagService {
                         sources
                 )
         );
+    }
+    
+    private Mono<SourcesResponse> generateSourcesResponse(
+            String question,
+            List<ExpandedSource> expandedSources) {
+
+        Map<String, Source> sourcesByDocumentId =
+                new LinkedHashMap<>();
+
+        for (ExpandedSource expandedSource : expandedSources) {
+
+            SegmentSearchResult result =
+                    expandedSource.selected();
+
+            String documentId =
+                    documentDao.getDocumentId(
+                            expandedSource
+                    );
+
+            sourcesByDocumentId.putIfAbsent(
+                    documentId,
+                    new Source(
+                            documentId,
+                            result.documentTitle(),
+                            result.documentDate(),
+                            result.score()
+                    )
+            );
+        }
+
+        List<Source> sources =
+                new ArrayList<>(
+                        sourcesByDocumentId.values()
+                );
+
+        SourcesResponse response =
+                new SourcesResponse(
+                        question,
+                        sources
+                );
+
+        return Mono.just(response);
     }
     
     private List<String> getFilters(Map<String, String> parameters) {

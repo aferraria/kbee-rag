@@ -10,4 +10,6 @@ public interface DocumentDao {
             List<SegmentSearchResult> results,
             String question
     );
+    
+    String getDocumentId(ExpandedSource source);
 }

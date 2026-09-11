@@ -18,6 +18,7 @@ import kbee.rag.io.JudicialFileParser;
 import kbee.rag.io.PathFile;
 import kbee.rag.io.TextFile;
 import kbee.rag.search.SegmentDao;
+import kbee.rag.search.SegmentSearchResult;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -354,9 +355,25 @@ public class JudicialDecisionIndexerCommand
             TextFile file) {
 
         if (file == null || "sumario".equals(file.type())) {
+        //if (file == null) {
             return Mono.empty();
         }
-
+        
+//        if ("fallo".equals(file.type())) {
+//        	List<SegmentSearchResult> segments =
+//                segmentDao
+//                        .findSegments(file.id(), 0, 1)
+//                        .collectList()
+//                        .blockOptional()
+//                        .orElseGet(List::of);
+//        	if (!segments.isEmpty()) {
+//                return Mono.empty();
+//        	}
+//        	else {
+//        		System.out.println("Fallo faltante");
+//        	}
+//        }
+        
         long start =
                 System.nanoTime();
 
@@ -383,13 +400,9 @@ public class JudicialDecisionIndexerCommand
         .buffer(
                 enrichmentBatchSize
         )
-
-//        .concatMap(
-//                segmentEnhancer::enhance
-//        )
-        .flatMap(
+        .flatMapSequential(
                 segmentEnhancer::enhance,
-                2
+                3
         )
 
         /*
