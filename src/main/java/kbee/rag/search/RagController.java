@@ -1,6 +1,5 @@
 package kbee.rag.search;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -51,14 +50,12 @@ public class RagController {
 //    }
     
     @PostMapping("/document-analysis")
-    public ResponseEntity<DocumentAnalysisResponse> analyzeDocument(
+    public Mono<DocumentAnalysisResponse> analyzeDocument(
             @RequestBody DocumentAnalysisRequest request) {
 
-        return ResponseEntity.ok(
-                ragService.analyzeDocument(
-                        request.documentId(),
-                        request.question()
-                )
+        return ragService.analyzeDocument(
+                request.documentId(),
+                request.question()
         );
     }
 }

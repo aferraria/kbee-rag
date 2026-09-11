@@ -663,6 +663,109 @@ public class DefaultLegalTextEnhancer
             );
         }
 
+        return evaluateBatch(
+                inputs,
+                promptName
+        )
+        .flatMap(evaluationsById -> {
+
+            List<BatchCandidateInput> missingInputs =
+                    findMissingInputs(
+                            inputs,
+                            evaluationsById
+                    );
+
+            if (missingInputs.isEmpty()) {
+                return Mono.just(
+                        buildEnhancements(
+                                inputs,
+                                evaluationsById
+                        )
+                );
+            }
+
+            System.err.println(
+                    "===== LLM BATCH INCOMPLETO ====="
+            );
+
+            System.err.println(
+                    "Segmentos faltantes: "
+                            + missingInputs.stream()
+                                    .map(
+                                            BatchCandidateInput::id
+                                    )
+                                    .toList()
+            );
+
+            System.err.println(
+                    "Reintentando únicamente "
+                            + "los segmentos faltantes..."
+            );
+
+            return evaluateBatch(
+                    missingInputs,
+                    promptName
+            )
+            .map(retryEvaluationsById -> {
+
+                Map<Integer, BatchSegmentEvaluation> merged =
+                        new LinkedHashMap<>(
+                                evaluationsById
+                        );
+
+                retryEvaluationsById.forEach(
+                        merged::putIfAbsent
+                );
+
+                List<BatchCandidateInput> stillMissing =
+                        findMissingInputs(
+                                inputs,
+                                merged
+                        );
+
+                if (!stillMissing.isEmpty()) {
+
+                    System.err.println(
+                            "===== LLM BATCH INCOMPLETO "
+                                    + "DESPUÉS DEL RETRY ====="
+                    );
+
+                    System.err.println(
+                            "Segmentos todavía faltantes: "
+                                    + stillMissing.stream()
+                                            .map(
+                                                    BatchCandidateInput::id
+                                            )
+                                            .toList()
+                    );
+
+                    System.err.println(
+                            "Se continuará con "
+                                    + "enhancement vacío para "
+                                    + "esos segmentos."
+                    );
+                }
+
+                return buildEnhancements(
+                        inputs,
+                        merged
+                );
+            });
+        });
+    }
+
+    /*
+     * Ejecuta una única evaluación batch del LLM.
+     *
+     * El resultado queda indexado por el ID enviado al modelo.
+     * No se exige aquí que estén todos los IDs: esa validación
+     * se realiza en enhanceBatch(), porque una omisión ocasional
+     * del LLM se recupera reintentando solamente los faltantes.
+     */
+    private Mono<Map<Integer, BatchSegmentEvaluation>> evaluateBatch(
+            List<BatchCandidateInput> inputs,
+            String promptName) {
+
         String data =
                 buildBatchTextData(
                         inputs
@@ -712,78 +815,120 @@ public class DefaultLegalTextEnhancer
                         }
                     }
 
-                    List<LegalEnhancement> result =
-                            new java.util.ArrayList<>(
-                                    inputs.size()
-                            );
-
-                    for (BatchCandidateInput input :
-                            inputs) {
-
-                        if (input.text() == null
-                                || input.text().isBlank()) {
-
-                            result.add(
-                                    emptyEnhancement()
-                            );
-
-                            continue;
-                        }
-
-                        BatchSegmentEvaluation segmentEvaluation =
-                                evaluationsById.get(
-                                        input.id()
-                                );
-
-                        if (segmentEvaluation == null) {
-
-                            throw new IllegalStateException(
-                                    "El LLM no devolvió el segmento "
-                                            + input.id()
-                            );
-                        }
-
-                        List<String> selectedTerms =
-                                normalizeTerms(
-                                        segmentEvaluation.terminos()
-                                );
-
-                        /*
-                         * Cada segmento se reconstruye exclusivamente
-                         * contra sus propios candidatos.
-                         */
-                        List<Concept> voices =
-                                rebuildSupportedVoicesFromTerms(
-                                        input.candidateVoices(),
-                                        selectedTerms
-                                );
-
-                        List<String> propositions =
-                                normalizePropositions(
-                                        segmentEvaluation.propositions()
-                                );
-
-                        String legalText =
-                                formatLegalText(
-                                        voices,
-                                        propositions
-                                );
-
-                        result.add(
-                                new LegalEnhancement(
-                                        legalText,
-                                        voices,
-                                        propositions
-                                )
-                        );
-                    }
-
-                    return List.copyOf(
-                            result
-                    );
+                    return evaluationsById;
                 });
     }
-    
+
+    /*
+     * Devuelve solamente los segmentos con texto cuyo ID
+     * no fue devuelto por el LLM.
+     */
+    private List<BatchCandidateInput> findMissingInputs(
+            List<BatchCandidateInput> inputs,
+            Map<Integer, BatchSegmentEvaluation> evaluationsById) {
+
+        return inputs.stream()
+                .filter(input ->
+                        input.text() != null
+                                && !input.text().isBlank()
+                )
+                .filter(input ->
+                        !evaluationsById.containsKey(
+                                input.id()
+                        )
+                )
+                .toList();
+    }
+
+    /*
+     * Reconstruye el resultado final respetando exactamente
+     * el orden y la cantidad de los inputs originales.
+     *
+     * Si un segmento sigue faltando luego del retry, se usa
+     * un enhancement vacío en lugar de abortar todo el fallo.
+     */
+    private List<LegalEnhancement> buildEnhancements(
+            List<BatchCandidateInput> inputs,
+            Map<Integer, BatchSegmentEvaluation> evaluationsById) {
+
+        List<LegalEnhancement> result =
+                new java.util.ArrayList<>(
+                        inputs.size()
+                );
+
+        for (BatchCandidateInput input :
+                inputs) {
+
+            if (input.text() == null
+                    || input.text().isBlank()) {
+
+                result.add(
+                        emptyEnhancement()
+                );
+
+                continue;
+            }
+
+            BatchSegmentEvaluation segmentEvaluation =
+                    evaluationsById.get(
+                            input.id()
+                    );
+
+            if (segmentEvaluation == null) {
+
+                System.err.println(
+                        "El LLM no devolvió el segmento "
+                                + input.id()
+                                + ". Se usa enhancement vacío."
+                );
+
+                result.add(
+                        emptyEnhancement()
+                );
+
+                continue;
+            }
+
+            List<String> selectedTerms =
+                    normalizeTerms(
+                            segmentEvaluation.terminos()
+                    );
+
+            /*
+             * Cada segmento se reconstruye exclusivamente
+             * contra sus propios candidatos.
+             */
+            List<Concept> voices =
+                    rebuildSupportedVoicesFromTerms(
+                            input.candidateVoices(),
+                            selectedTerms
+                    );
+
+            List<String> propositions =
+                    normalizePropositions(
+                            segmentEvaluation.propositions()
+                    );
+
+            String legalText =
+                    formatLegalText(
+                            voices,
+                            propositions
+                    );
+
+            result.add(
+                    new LegalEnhancement(
+                            legalText,
+                            voices,
+                            propositions
+                    )
+            );
+        }
+
+        return List.copyOf(
+                result
+        );
+    }
+
     private List<String> normalizeTerms(
             List<String> terms) {
 

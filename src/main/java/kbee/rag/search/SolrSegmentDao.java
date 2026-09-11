@@ -132,6 +132,47 @@ public class SolrSegmentDao
                 )
                 .then();
     }
+    
+    @Override
+    public Flux<SegmentSearchResult> findDocumentSegments(
+            String documentId) {
+
+        if (documentId == null
+                || documentId.isBlank()) {
+
+            return Flux.empty();
+        }
+
+        ModifiableSolrParams params =
+                new ModifiableSolrParams();
+
+        params.set(
+                "q",
+                "document_id:\""
+                        + escape(documentId)
+                        + "\""
+        );
+
+        params.set(
+                "sort",
+                "segment_number asc"
+        );
+
+        /*
+         * Queremos todos los segmentos del documento.
+         *
+         * Para jurisprudencia no debería acercarse
+         * ni remotamente a este límite.
+         */
+        params.set(
+                "rows",
+                10000
+        );
+
+        return search(
+                params
+        );
+    }
 
     /*
      * =================================================

@@ -26,4 +26,7 @@ public interface SegmentDao {
     Flux<SegmentSearchResult> search(
             SolrParams params
     );
+    
+    Flux<SegmentSearchResult> findDocumentSegments(
+            String documentId);
 }

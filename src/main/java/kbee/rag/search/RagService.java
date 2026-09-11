@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import kbee.rag.audit.AuditContext;
 import kbee.rag.audit.AuditRecord;
 import kbee.rag.audit.ReactorAuditPublisher;
+import kbee.rag.config.InstructionProvider;
+import kbee.rag.document.DocumentDao;
 import kbee.rag.llm.LlmRequest;
 import kbee.rag.llm.LlmRequestBuilder;
 import kbee.rag.llm.LlmService;
@@ -35,6 +37,8 @@ public class RagService {
     private final LlmService llmService;
     
     private final FilterQueryBuilder filterBuilder;
+    
+    private final InstructionProvider instructionProvider;
 
     public RagService(
             SegmentSearchService segmentSearchService,
@@ -43,7 +47,8 @@ public class RagService {
             RerankerService rerankerService,
             LlmRequestBuilder llmRequestBuilder,
             LlmService llmService,
-            FilterQueryBuilder filterBuilder) {
+            FilterQueryBuilder filterBuilder,
+            InstructionProvider instructionProvider) {
 
         this.segmentSearchService =
                 segmentSearchService;
@@ -63,6 +68,9 @@ public class RagService {
                 llmService;
         
         this.filterBuilder = filterBuilder;
+        
+        this.instructionProvider = instructionProvider;
+
     }
     
     public Mono<RagResponse> answer(
@@ -210,55 +218,61 @@ public class RagService {
                 });
     }
     
-    public DocumentAnalysisResponse analyzeDocument(
+    public Mono<DocumentAnalysisResponse> analyzeDocument(
             String documentId,
             String question) {
 
-//        List<SegmentSearchResult> segments =
-//                vectorSearchService.findDocumentSegments(
-//                        resolveFalloId(documentId)
-//                );
-//
-//        if (segments.isEmpty()) {
-//            throw new IllegalArgumentException(
-//                    "Document not found: " + documentId
-//            );
-//        }
-//
-//        SegmentSearchResult firstSegment = segments.get(0);
-//
-//        String documentText =
-//                rebuildDocument(
-//                        firstSegment,
-//                        segments
-//                );
-//
-//        String context = """
-//                Pregunta del usuario:
-//
-//                %s
-//
-//                Documento a analizar:
-//
-//                %s
-//                """.formatted(
-//                        question,
-//                        documentText
-//                );
-//
-//        String answer =
-//                llmService.generate(
-//                        buildDocumentAnalysisInstructions(),
-//                        context
-//                );
-//
-//        return new DocumentAnalysisResponse(
-//                documentId,
-//                firstSegment.documentTitle(),
-//                answer
-//        );
-    	
-    	return null;
+        return documentDao
+                .getDocument(
+                        documentId
+                )
+                .switchIfEmpty(
+                        Mono.error(
+                                new IllegalArgumentException(
+                                        "Document not found: "
+                                                + documentId
+                                )
+                        )
+                )
+                .flatMap(document -> {
+
+                    String context = """
+                            Pregunta del usuario:
+
+                            %s
+
+                            Documento a analizar:
+
+                            %s
+                            """.formatted(
+                                    question,
+                                    document.text()
+                            );
+
+                    String instructions =
+                            instructionProvider.get(
+                                    "document-analysis"
+                            );
+
+                    LlmRequest request =
+                            new LlmRequest(
+                                    instructions,
+                                    context,
+                                    null
+                            );
+
+                    return llmService
+                            .generate(
+                                    request
+                            )
+                            .map(answer ->
+                                    new DocumentAnalysisResponse(
+                                            document.documentId(),
+                                            document.documentTitle(),
+                                            answer
+                                    )
+                            );
+                });
     }
     
     private Mono<List<ExpandedSource>> rerank(
