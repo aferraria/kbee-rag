@@ -28,6 +28,9 @@ public class JudicialDocumentDao
 
     private static final int EXPANSION_RADIUS =
             1;
+    
+    private static final int LOCAL_TOP_K = 3;
+
 
     private final SegmentDao segmentDao;
 
@@ -37,9 +40,39 @@ public class JudicialDocumentDao
         this.segmentDao =
                 solrService;
     }
-
+    
     @Override
     public Mono<List<ExpandedSource>> getSources(
+            List<SegmentSearchResult> results,
+            String question) {
+
+        if (results == null
+                || results.isEmpty()) {
+
+            return Mono.just(
+                    List.of()
+            );
+        }
+
+        Map<String, List<SegmentSearchResult>> candidatesByDocument =
+                groupByDocument(
+                        results
+                );
+
+        return Flux.fromIterable(
+                candidatesByDocument.entrySet()
+        )
+        .concatMap(entry ->
+                buildExpandedSource(
+                        entry.getKey(),
+                        entry.getValue(),
+                        question
+                )
+        )
+        .collectList();
+    }
+
+    public Mono<List<ExpandedSource>> getSources2(
             List<SegmentSearchResult> results,
             String question) {
 
@@ -141,6 +174,8 @@ public class JudicialDocumentDao
         .collectList();
     }
     
+    
+    
     public String getDocumentId(ExpandedSource source) {
     	String sourceId = source.selected().documentId();
     	String s[] = sourceId.split("-");
@@ -199,7 +234,129 @@ public class JudicialDocumentDao
                     );
                 });
     }
+    
+    private Mono<ExpandedSource> buildExpandedSource(
+            String documentId,
+            List<SegmentSearchResult> documentResults,
+            String question) {
 
+        List<SegmentSearchResult> parts =
+                documentResults.stream()
+                        .sorted(
+                                Comparator
+                                        .comparing(
+                                                SegmentSearchResult::score
+                                        )
+                                        .reversed()
+                        )
+                        .toList();
+
+        if (parts.isEmpty()) {
+            return Mono.empty();
+        }
+
+        List<SegmentSearchResult> selectedParts =
+                selectNonOverlappingParts(
+                        parts
+                );
+
+        if (selectedParts.isEmpty()) {
+            return Mono.empty();
+        }
+
+        SegmentSearchResult selected =
+                selectedParts.get(0);
+
+        return segmentDao
+                .findDocumentSegments(
+                        documentId,
+                        question,
+                        LOCAL_TOP_K
+                )
+                .collectList()
+                .flatMap(localSegments -> {
+
+                    /*
+                     * Unimos hits globales + hits locales.
+                     */
+                    Map<String, SegmentSearchResult> evidenceById =
+                            new LinkedHashMap<>();
+
+                    for (SegmentSearchResult part :
+                            selectedParts) {
+
+                        evidenceById.putIfAbsent(
+                                part.id(),
+                                part
+                        );
+                    }
+
+                    for (SegmentSearchResult local :
+                            localSegments) {
+
+                        evidenceById.putIfAbsent(
+                                local.id(),
+                                local
+                        );
+                    }
+
+                    List<SegmentSearchResult> evidence =
+                            new ArrayList<>(
+                                    evidenceById.values()
+                            );
+
+                    /*
+                     * Ahora sólo expandimos ±1 alrededor
+                     * de evidencia realmente relevante.
+                     */
+                    return expandNeighbors(
+                            evidence,
+                            EXPANSION_RADIUS,
+                            question
+                    )
+                    .collectList();
+                })
+                .map(expandedParts -> {
+
+                    Map<String, SegmentSearchResult> contextById =
+                            new LinkedHashMap<>();
+
+                    for (ExpandedSource expandedPart :
+                            expandedParts) {
+
+                        SegmentSearchResult partSelected =
+                                expandedPart.selected();
+
+                        if (partSelected != null) {
+
+                            contextById.putIfAbsent(
+                                    partSelected.id(),
+                                    partSelected
+                            );
+                        }
+
+                        for (SegmentSearchResult context :
+                                expandedPart.contextSegments()) {
+
+                            contextById.putIfAbsent(
+                                    context.id(),
+                                    context
+                            );
+                        }
+                    }
+
+                    contextById.remove(
+                            selected.id()
+                    );
+
+                    return new ExpandedSource(
+                            selected,
+                            new ArrayList<>(
+                                    contextById.values()
+                            )
+                    );
+                });
+    }
     /*
      * =================================================
      * GROUP BY DOCUMENT

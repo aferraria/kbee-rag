@@ -101,19 +101,7 @@ Finalmente, con relación a los rubros indemnizatorios demandados, el Colegiado 
         
         String segmentText9 =
         """
-        		        Con base en el relato efectuado precedentemente, se adelanta que merecen favorable acogida los 
-        		        agravios vinculados con la arbitrariedad del pronunciamiento impugnado por rechazar la falta de acción a pesar de la renuncia 
-        		        expresa formulada por los ahora actores.\n\n
-        		        En efecto, teniendo en cuenta que se halla fuera de toda discusión que los accionantes recibieron el pago de la \"ayuda extraordinaria\" contemplada en el 
-        		        régimen reparatorio especial establecido por ley 12183 (modif. por ley 12259), la cuestión planteada es sustancialmente análoga a la considerada y 
-        		        resuelta por este Tribunal en los precedentes \"Villa\" y \"Ulrich\" (A. y S. nro. 82 y nro. 83, año 2024), a cuyos 
-        		        fundamentos se remite en lo pertinente, y se dan aquí por reproducidos por razones de economía procesal.\n\nSentada en dichos 
-        		        precedentes la disponibilidad de los derechos patrimoniales en juego, resta aquí añadir que en aquellos fallos esta Corte descartó que la vulnerabilidad, 
-        		        urgencia o necesidad fueran fundamentos suficientes para declarar la inconstitucionalidad del artículo 7 de la ley 12183, y 
-        		        expresó que tales circunstancias podrían a lo sumo ser ponderadas por los Sentenciantes, eventualmente, a fin de examinar la existencia de algún 
-        		        vicio de la voluntad nulificante de los respectivos actos jurídicos de renuncia. 
-        		        Se hizo especial énfasis en que una solución de ese tipo debía basarse en esfuerzos argumentales y 
-        		        probatorios específicos que en tal sentido hubiese desplegado el accionante.
+        		        En efecto, como fue señalado por esta Corte en la causa \"Consolini\" (A. y S. T. 323, pág. 10), el haber previsional de un beneficiario del régimen de jubilaciones y pensiones provincial debe movilizarse según las pautas establecidas por el legislador y, si la aplicación de ese concreto sistema de movilidad produce que los haberes no guarden la razonable proporcionalidad requerida para asegurar la eficacia de la garantía constitucional respectiva, corresponde definir cómo se corregirá esa lesión al derecho subjetivo involucrado. Así, pues, se observan dos operaciones distintas: la primera consiste en verificar si en un caso concreto las reglas de movilidad adoptadas por el legislador han o no sido respetadas por el ente administrativo encargado de la aplicación de la norma; la segunda implica efectuar una corrección al sistema de movilidad vigente aplicado de manera regular, es decir, si un haber ha sido movilizado conforme a las exigencias normativas pero de todos modos se verifica una ruptura de la razonable proporcionalidad que debe existir entre la prestación abonada al pasivo y las remuneraciones que hubiese percibido en actividad, en tal supuesto corresponde reparar el derecho subjetivo afectado, a través de las pautas jurisprudenciales pertinentes.\n\nEsas dos operaciones pueden incluirse conjuntamente como pretensiones al interponer recurso contencioso administrativo, o bien el actor puede limitarse a solicitar una de ellas.
         """;
         
         

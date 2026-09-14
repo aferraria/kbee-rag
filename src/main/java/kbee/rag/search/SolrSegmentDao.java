@@ -16,6 +16,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -173,7 +174,61 @@ public class SolrSegmentDao
                 params
         );
     }
+    
+    
+    @Override
+    public Flux<SegmentSearchResult> findDocumentSegments(
+            String documentId,
+            String text,
+            int topK) {
 
+        if (documentId == null
+                || documentId.isBlank()
+                || text == null
+                || text.isBlank()) {
+
+            return Flux.empty();
+        }
+
+        ModifiableSolrParams params =
+                new ModifiableSolrParams();
+
+        params.set(
+                "q",
+                ClientUtils.escapeQueryChars(text)
+        );
+
+        params.set(
+                "df",
+                "segment_text"
+        );
+
+        params.set(
+                "q.op",
+                "OR"
+        );
+
+        params.add(
+                "fq",
+                "document_id:\""
+                        + ClientUtils.escapeQueryChars(
+                                documentId
+                        )
+                        + "\""
+        );
+
+        params.add(
+                "fq",
+                "-section_id:RESUELVE"
+        );
+
+        params.set(
+                "rows",
+                topK
+        );
+
+        return search(params);
+    }
     /*
      * =================================================
      * COMMIT

@@ -29,4 +29,9 @@ public interface SegmentDao {
     
     Flux<SegmentSearchResult> findDocumentSegments(
             String documentId);
+    
+    public Flux<SegmentSearchResult> findDocumentSegments(
+            String documentId,
+            String text,
+            int topK); 
 }

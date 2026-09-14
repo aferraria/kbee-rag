@@ -121,8 +121,8 @@ public class OllamaLlmService
 //                            )
                             new Options(
                                     0.0,
-                                    48000,  // num_ctx
-                                    48768    // num_predict
+                                    48000,
+                                    4096
                             )
                     );
 

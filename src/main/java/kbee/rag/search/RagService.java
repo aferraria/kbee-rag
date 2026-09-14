@@ -2,9 +2,13 @@ package kbee.rag.search;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.springframework.stereotype.Service;
 
@@ -18,7 +22,9 @@ import kbee.rag.llm.LlmRequestBuilder;
 import kbee.rag.llm.LlmService;
 import kbee.rag.reranker.RerankRequest;
 import kbee.rag.reranker.RerankRequestBuilder;
+import kbee.rag.reranker.RerankResult;
 import kbee.rag.reranker.RerankerService;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -275,7 +281,255 @@ public class RagService {
                 });
     }
     
+    private static final int RERANK_BATCH_SIZE = 6;
+    
+
     private Mono<List<ExpandedSource>> rerank(
+            String question,
+            List<ExpandedSource> sources,
+            int topK) {
+
+        if (sources == null || sources.isEmpty()) {
+            return Mono.just(List.of());
+        }
+        
+        System.out.println();
+        System.out.println(
+                "===== SOURCES BEFORE RERANK ====="
+        );
+
+        for (int i = 0; i < sources.size(); i++) {
+
+            ExpandedSource source =
+                    sources.get(i);
+
+            SegmentSearchResult selected =
+                    source.selected();
+
+            System.out.printf(
+                    "%d | %s | %s%n",
+                    i,
+                    selected.documentId(),
+                    selected.id()
+            );
+        }
+
+        System.out.println(
+                "================================="
+        );
+        System.out.println();
+
+        List<IndexedSource> indexedSources =
+                IntStream.range(0, sources.size())
+                        .mapToObj(index ->
+                                new IndexedSource(
+                                        index,
+                                        sources.get(index)
+                                )
+                        )
+                        .toList();
+
+        return Flux.fromIterable(indexedSources)
+                .buffer(RERANK_BATCH_SIZE)
+                .concatMap(batch ->
+                        rerankBatch(
+                                question,
+                                batch
+                        )
+                )
+                .flatMapIterable(Function.identity())
+                .collectList()
+                .flatMap(finalists -> {
+
+                    List<ExpandedSource> finalSources =
+                            finalists.stream()
+                                    .map(IndexedSource::source)
+                                    .toList();
+
+                    RerankRequest finalRequest =
+                            rerankRequestBuilder.build(
+                                    question,
+                                    finalSources
+                            );
+
+                    return rerankerService.rerank(
+                            finalRequest,
+                            Math.min(
+                                    topK,
+                                    finalSources.size()
+                            )
+                    );
+                });
+    }
+    
+
+    private static final int RERANK_BATCH_DROP_LAST = 2;
+
+    private Mono<List<IndexedSource>> rerankBatch(
+            String question,
+            List<IndexedSource> batch) {
+
+        if (batch == null || batch.isEmpty()) {
+            return Mono.just(List.of());
+        }
+
+        List<ExpandedSource> batchSources =
+                batch.stream()
+                        .map(IndexedSource::source)
+                        .toList();
+
+        Map<String, IndexedSource> indexedByKey =
+                batch.stream()
+                        .collect(
+                                Collectors.toMap(
+                                        indexed ->
+                                                sourceKey(
+                                                        indexed.source()
+                                                ),
+                                        Function.identity()
+                                )
+                        );
+
+        RerankRequest request =
+                rerankRequestBuilder.build(
+                        question,
+                        batchSources
+                );
+
+        return rerankerService.rerank(
+                request,
+                batchSources.size()
+        )
+        .map(reranked -> {
+
+            System.out.println();
+            System.out.println(
+                    "===== RERANK BATCH FINALISTS ====="
+            );
+
+            /*
+             * El filtro por score puede eliminar
+             * todos los candidatos del batch.
+             */
+            if (reranked == null
+                    || reranked.isEmpty()) {
+
+                System.out.printf(
+                        "KEEP 0 / %d | DROP %d%n",
+                        batch.size(),
+                        batch.size()
+                );
+
+                System.out.println(
+                        "=================================="
+                );
+
+                return List.<IndexedSource>of();
+            }
+
+            List<IndexedSource> finalists =
+                    new ArrayList<>();
+
+            int keep =
+                    Math.max(
+                            0,
+                            reranked.size()
+                                    - RERANK_BATCH_DROP_LAST
+                    );
+
+            for (int rank = 0;
+                    rank < keep;
+                    rank++) {
+
+                ExpandedSource source =
+                        reranked.get(rank);
+
+                String key =
+                        sourceKey(source);
+
+                IndexedSource indexed =
+                        indexedByKey.get(key);
+
+                if (indexed == null) {
+
+                    SegmentSearchResult selected =
+                            source.selected();
+
+                    throw new IllegalStateException(
+                            "No se pudo encontrar la fuente rerankeada "
+                                    + "dentro del batch. "
+                                    + "documentId="
+                                    + selected.documentId()
+                                    + ", id="
+                                    + selected.id()
+                    );
+                }
+
+                finalists.add(indexed);
+
+                SegmentSearchResult selected =
+                        source.selected();
+
+                System.out.printf(
+                        "rank=%2d | global=%2d | %s | %s%n",
+                        rank + 1,
+                        indexed.index(),
+                        selected.documentId(),
+                        selected.id()
+                );
+            }
+
+            System.out.printf(
+                    "KEEP %d / %d | DROP %d%n",
+                    finalists.size(),
+                    batch.size(),
+                    batch.size() - finalists.size()
+            );
+
+            System.out.println(
+                    "=================================="
+            );
+
+            return finalists;
+
+        });
+    }
+    private String sourceKey(
+            ExpandedSource source) {
+
+        if (source == null) {
+            throw new IllegalArgumentException(
+                    "ExpandedSource no puede ser null"
+            );
+        }
+
+        SegmentSearchResult selected =
+                source.selected();
+
+        if (selected == null) {
+            throw new IllegalStateException(
+                    "ExpandedSource.selected() no puede ser null"
+            );
+        }
+
+        return selected.documentId()
+                + "|"
+                + selected.id();
+    }
+
+    private record IndexedSource(
+            int index,
+            ExpandedSource source
+    ) {
+    }
+
+    private record RankedSource(
+            int index,
+            double score
+    ) {
+    }
+
+    private Mono<List<ExpandedSource>> rerank2(
             String question,
             List<ExpandedSource> sources,
             int topK) {

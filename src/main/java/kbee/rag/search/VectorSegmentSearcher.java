@@ -247,8 +247,7 @@ public class VectorSegmentSearcher
                 .toList();
     }
 
-    @SuppressWarnings("unused")
-	private void addResults(
+    private void addResults(
             Map<String, MergedResult> merged,
             List<SegmentSearchResult> results,
             double weight) {
@@ -266,8 +265,13 @@ public class VectorSegmentSearcher
                     weight
                             / (k + i + 1);
 
+            String key =
+                    effectiveDocumentId(
+                            result
+                    );
+
             merged.compute(
-                    result.id(),
+                    key,
                     (id, existing) -> {
 
                         if (existing == null) {
@@ -278,14 +282,51 @@ public class VectorSegmentSearcher
                             );
                         }
 
+                        SegmentSearchResult bestResult =
+                                result.score()
+                                        > existing.result().score()
+                                                ? result
+                                                : existing.result();
+
                         return new MergedResult(
-                                existing.result(),
+                                bestResult,
                                 existing.score()
                                         + score
                         );
                     }
             );
         }
+    }
+    
+    private String effectiveDocumentId(
+            SegmentSearchResult result) {
+
+        String documentId =
+                result.documentId();
+
+        if (documentId == null
+                || documentId.isBlank()) {
+
+            return result.id();
+        }
+
+        if (documentId.startsWith(
+                "sumario-fallo-"
+        )) {
+
+            int lastDash =
+                    documentId.lastIndexOf('-');
+
+            if (lastDash > 0) {
+
+                return documentId.substring(
+                        "sumario-".length(),
+                        lastDash
+                );
+            }
+        }
+
+        return documentId;
     }
     
     private SegmentSearchResult withScore(

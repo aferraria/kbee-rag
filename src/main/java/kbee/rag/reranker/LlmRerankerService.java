@@ -1,8 +1,11 @@
 package kbee.rag.reranker;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -43,14 +46,8 @@ public class LlmRerankerService
             RerankRequest request,
             int topK) {
 
-        //List<ExpandedSource> candidates =
-        //        request.candidates();
-  
         List<ExpandedSource> candidates =
-                request.candidates()
-                        .stream()
-                        .limit(topK)
-                        .toList();
+                request.candidates();
 
         String input =
                 buildInput(
@@ -151,7 +148,79 @@ public class LlmRerankerService
         return input.toString();
     }
     
+    private static final double RERANK_MIN_SCORE = 0.40;
+
     private List<ExpandedSource> parseRanking(
+            String response,
+            List<ExpandedSource> candidates,
+            int topK) {
+
+        try {
+
+            RankingResponse ranking =
+                    objectMapper.readValue(
+                            response,
+                            RankingResponse.class
+                    );
+
+            return ranking.ranking()
+                    .stream()
+
+                    /*
+                     * Validamos índice.
+                     */
+                    .filter(result ->
+                            result.index() >= 0
+                                    && result.index()
+                                            < candidates.size()
+                    )
+
+                    /*
+                     * No confiamos en el orden
+                     * devuelto por el LLM.
+                     */
+                    .sorted(
+                            Comparator.comparingDouble(
+                                    RankingResult::score
+                            ).reversed()
+                    )
+
+                    /*
+                     * Descartamos los documentos
+                     * clasificados como poco relevantes.
+                     */
+                    .filter(result ->
+                            result.score()
+                                    >= RERANK_MIN_SCORE
+                    )
+
+                    /*
+                     * topK se aplica a la SALIDA,
+                     * no a los candidatos de entrada.
+                     */
+                    .limit(topK)
+
+                    .map(result ->
+                            withRerankScore(
+                                    candidates.get(
+                                            result.index()
+                                    ),
+                                    result.score()
+                            )
+                    )
+                    .toList();
+
+        } catch (Exception e) {
+
+            throw new IllegalStateException(
+                    "Respuesta inválida del LLM reranker: "
+                            + response,
+                    e
+            );
+        }
+    }
+    
+    private List<ExpandedSource> parseRanking2(
             String response,
             List<ExpandedSource> candidates,
             int topK) {
