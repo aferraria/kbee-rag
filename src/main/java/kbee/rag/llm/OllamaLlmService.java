@@ -114,10 +114,15 @@ public class OllamaLlmService
                             false,
                             false,
                             request.format(),
+//                            new Options(
+//                                    0.0,
+//                                    32768,
+//                                    48768
+//                            )
                             new Options(
                                     0.0,
-                                    32768,
-                                    48768
+                                    48000,  // num_ctx
+                                    48768    // num_predict
                             )
                     );
 

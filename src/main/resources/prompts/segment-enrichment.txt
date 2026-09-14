@@ -1,160 +1,263 @@
+Recibirás:
 
-            Recibirás:
+1. un TEXTO JUDICIAL;
+2. una lista de TÉRMINOS candidatos de un tesauro.
 
-            1. un TEXTO JUDICIAL;
-            2. una lista de TÉRMINOS candidatos de un tesauro.
+Debés realizar dos tareas independientes:
 
-            Debés realizar dos tareas independientes:
-
-            A) evaluar los términos;
-            B) generar proposiciones jurídicas del TEXTO JUDICIAL.
-
-
-            CONTEXTO JURISDICCIONAL DEL CORPUS
-
-            Todos los textos provienen de fallos de la Provincia de Santa Fe.
-
-            Por lo tanto, salvo que el TEXTO JUDICIAL indique expresamente
-            otra jurisdicción, toda mención genérica a instituciones,
-            tribunales, autoridades o lugares debe interpretarse como
-            referida a la Provincia de Santa Fe.
-
-            Ejemplos:
-
-            - "esta Corte" o "la Corte" se interpreta como
-              "Corte Suprema de Justicia de la Provincia de Santa Fe";
-
-            - "la Provincia" se interpreta como
-              "Provincia de Santa Fe";
-
-            - una "Cámara de Apelación", si no se indica otra jurisdicción,
-              corresponde a una Cámara de Apelación de la Provincia de Santa Fe.
-
-            Esta regla puede utilizarse únicamente para determinar
-            la jurisdicción de una institución o lugar mencionado en el texto.
-
-            No puede utilizarse para inferir procedimientos, competencias,
-            normas, recursos, cargos, relaciones jerárquicas ni otros
-            conceptos que no estén expresados en el TEXTO JUDICIAL.
+A) seleccionar los TÉRMINOS respaldados por el TEXTO JUDICIAL;
+B) generar proposiciones jurídicas del TEXTO JUDICIAL.
 
 
-            EVALUACION DE TERMINOS
+==================================================
+CONTEXTO JURISDICCIONAL DEL CORPUS
+==================================================
 
-            Evaluá cada término de forma independiente.
+Todos los textos provienen de fallos de la Provincia de Santa Fe.
 
-            Un término está respaldado únicamente si:
+Por lo tanto, salvo que el TEXTO JUDICIAL indique expresamente otra
+jurisdicción, toda mención genérica a instituciones, tribunales,
+autoridades o lugares debe interpretarse como referida a la Provincia
+de Santa Fe.
 
-            - aparece expresado en el TEXTO JUDICIAL; o
+Ejemplos:
 
-            - es una reformulación directa e inequívoca de algo expresado
-              en el TEXTO JUDICIAL.
+- "esta Corte" o "la Corte" se interpreta como
+  "Corte Suprema de Justicia de la Provincia de Santa Fe";
 
-            No asumas información que no esté en el TEXTO JUDICIAL.
+- "la Provincia" se interpreta como
+  "Provincia de Santa Fe";
 
-            No uses los demás términos de la lista para decidir si un
-            término está respaldado.
+- una "Cámara de Apelación", si no se indica otra jurisdicción,
+  corresponde a una Cámara de Apelación de la Provincia de Santa Fe.
 
-            No selecciones un término solamente porque esté jurídicamente
-            relacionado con el contenido del texto.
+Esta regla puede utilizarse únicamente para determinar la jurisdicción
+de una institución o lugar mencionado en el texto.
 
-            No selecciones un término porque sea una categoría más general,
-            más específica o habitualmente asociada con algo mencionado
-            en el TEXTO JUDICIAL.
-            
-            No incluyas terminos cuyo conceptos sea opuesto a los expresados en el texto.
-            
-            No incluyas términos basándote en hechos o circunstancias que no estén expresados en el texto.
-
-            Si para considerar respaldado un término necesitás agregar un
-            sujeto, contexto, procedimiento, causa, consecuencia, condición,
-            institución, jerarquía o situación que no esté expresada en el
-            TEXTO JUDICIAL, indicá false.
-
-            Si tenés dudas, no lo seleccioness
-
-            Evaluá todos los términos de la lista.
+No puede utilizarse para inferir procedimientos, competencias, normas,
+recursos, cargos, relaciones jerárquicas ni otros conceptos que no
+estén expresados en el TEXTO JUDICIAL.
 
 
-            REGLA DE IDENTIFICACION ESPECIFICA
+==================================================
+A) SELECCIÓN DE TÉRMINOS
+==================================================
 
-            Si relacionas un termino con una institución, esta relacion debe
-            ser clara y expresa y no debe necesitar ninguna inferencia ni
-            asunción de contexto
+Seleccioná únicamente los TÉRMINOS del tesauro que representen de forma
+directa e inequívoca conceptos jurídicos contenidos en el TEXTO JUDICIAL.
 
-            PROPOSICIONES
+La lista de candidatos es cerrada.
 
-            Generá proposiciones jurídicas únicamente a partir del
-            TEXTO JUDICIAL.
+No inventes, modifiques ni reformules TÉRMINOS.
 
-            Cada proposición debe expresar una afirmación autónoma,
-            concreta y jurídicamente relevante que esté expresada
-            en el TEXTO JUDICIAL.
+Evaluá cada TÉRMINO únicamente contra el TEXTO JUDICIAL.
 
-            Podés reformular una afirmación para hacerla clara,
-            pero no amplíes su contenido.
+No uses conocimiento externo ni otros candidatos para justificarlo.
 
-            No completes sujetos, tribunales, normas, procedimientos,
-            efectos, consecuencias ni calificaciones jurídicas que
-            no estén expresados en el TEXTO JUDICIAL.
-
-            No utilices los TÉRMINOS candidatos para generar,
-            completar o ampliar las proposiciones.
-
-            Las proposiciones deben poder generarse de la misma
-            manera aunque la lista de TÉRMINOS no hubiera sido
-            suministrada.
-
-            Si una afirmación requiere inferencia o conocimiento
-            externo para formularse, no la generes.
-
-            Evitá proposiciones redundantes.
-
-            Generá como máximo 10 proposiciones.
+La semejanza temática, semántica o la coincidencia de palabras no son
+suficientes.
 
 
-			 FORMATO OBLIGATORIO
-			
+VOCES JERÁRQUICAS
+
+El carácter ">" separa el TÉRMINO en subTÉRMINOS.
+
+Si el primer subTÉRMINO es "DERECHO", no lo evalúes.
+En ese caso, evaluá el TÉRMINO como si estuviera formado únicamente por
+los subTÉRMINOS posteriores.
+Ejemplo:
+DERECHO > RENUNCIA
+debe evaluarse exactamente como:
+RENUNCIA
+
+Si un subTÉRMINO agrega información jurídica específica —como sujeto,
+institución, procedimiento, causa, condición, modalidad o ámbito— esa
+información debe estar respaldada por el TEXTO JUDICIAL.
+
+
+SELECCIÓN
+
+Un TÉRMINO está respaldado únicamente si:
+
+- aparece expresado en el TEXTO JUDICIAL; o
+- es una reformulación directa e inequívoca de algo expresado
+  en el TEXTO JUDICIAL.
+
+No selecciones un TÉRMINO porque sea una categoría más general,
+más específica o habitualmente asociada con algo mencionado en el texto.
+
+No selecciones un TÉRMINO cuyo concepto sea contrario u opuesto
+al expresado en el texto.
+
+Si para seleccionar un TÉRMINO necesitás agregar un sujeto, contexto,
+procedimiento, causa, consecuencia, condición, institución, jerarquía
+o situación que no esté expresada en el TEXTO JUDICIAL, no lo selecciones.
+
+Si un TÉRMINO relaciona un concepto con una institución, esa relación
+debe ser clara y expresa y no debe requerir inferencia ni asunción
+de contexto, salvo la identificación jurisdiccional permitida anteriormente.
+
+Si tenés dudas sobre un TÉRMINO, no lo selecciones.
+
+Evaluá todos los TÉRMINOS candidatos.
+
+Conservá exactamente el texto de los TÉRMINOS seleccionados.
+
+REGLA DE CENTRALIDAD JURÍDICA
+
+No selecciones un término únicamente porque aparezca literalmente en el texto.
+
+Seleccioná prioritariamente los términos que representen la regla,
+institución, relación o consecuencia jurídica desarrollada en el segmento.
+
+No selecciones conceptos que aparezcan sólo como datos instrumentales,
+descriptivos o accesorios.
+
+Si el texto establece una consecuencia jurídica asociada a un concepto
+candidato, ese concepto debe tener prioridad sobre términos que sólo
+describen elementos secundarios del razonamiento.
+
+Ejemplo:
+si el texto establece que una obligación se convierte en deuda de dinero
+cuando adquiere firmeza una regulación de honorarios, debe priorizarse
+"HONORARIOS > REGULACION FIRME" frente a términos relativos al cargo del juez,
+la remuneración o sus adicionales.
+
+
+==================================================
+B) PROPOSICIONES JURÍDICAS
+==================================================
+
+Generá proposiciones jurídicas únicamente a partir del TEXTO JUDICIAL.
+
+No utilices los TÉRMINOS candidatos para generar, completar o ampliar
+las proposiciones.
+
+Las proposiciones deben poder generarse de la misma manera aunque la
+lista de TÉRMINOS no hubiera sido suministrada.
+
+
+CONTENIDO
+
+Extraé las reglas, criterios, requisitos, condiciones, conclusiones y
+relaciones jurídicas sustantivas expresadas en el TEXTO JUDICIAL.
+
+Priorizá las afirmaciones jurídicas adoptadas por el tribunal.
+
+Cada proposición debe expresar una afirmación autónoma, concreta y
+jurídicamente relevante.
+
+Podés reformular una afirmación para hacerla clara y autónoma,
+pero no amplíes ni alteres su contenido.
+
+Conservá la dirección de las relaciones expresadas en el texto.
+
+No intercambies causa, fundamento, objeto, condición o consecuencia.
+
+No agregues hechos, decisiones, requisitos, condiciones, causas,
+fundamentos, consecuencias ni relaciones que no estén expresados
+explícita o inequívocamente en el TEXTO JUDICIAL.
+
+No completes sujetos, tribunales, normas, procedimientos, efectos,
+consecuencias ni calificaciones jurídicas que no estén expresados
+en el TEXTO JUDICIAL.
+
+Si una afirmación requiere inferencia o conocimiento externo para
+formularse, no la generes.
+
+
+RELEVANCIA
+
+Omití información meramente accesoria que no contribuya a representar
+el contenido jurídico sustantivo del TEXTO JUDICIAL.
+
+Omití hechos, antecedentes procesales y referencias a precedentes cuando
+no sean necesarios para expresar una regla, criterio, requisito,
+condición o conclusión jurídica.
+
+No generes una proposición únicamente para indicar que un precedente
+fue citado, aplicado o considerado análogo.
+
+Si el TEXTO JUDICIAL reproduce o adopta una regla jurídica proveniente
+de un precedente, extraé la regla jurídica y no la mera referencia
+al precedente.
+
+
+PRECISIÓN Y NO REDUNDANCIA
+
+Cada proposición debe representar una idea jurídica diferente.
+
+No generes varias paráfrasis de la misma regla, criterio o conclusión.
+
+Cuando distintas partes del TEXTO JUDICIAL expresen sustancialmente
+la misma regla jurídica, conservala en una sola proposición.
+
+Generá el menor número de proposiciones necesario para representar
+el contenido jurídico sustantivo del TEXTO JUDICIAL.
+
+Generá como máximo 5 proposiciones.
+
+Si tenés dudas acerca de si una afirmación está contenida en el
+TEXTO JUDICIAL, no la agregues.
+
+
+==================================================
+REGLAS ESTRICTAS
+==================================================
+
+- No uses conocimiento jurídico externo.
+- No agregues información ausente del TEXTO JUDICIAL.
+- No inventes TÉRMINOS.
+- No inventes hechos ni soluciones jurídicas.
+- No selecciones TÉRMINOS por mera asociación temática.
+- No selecciones una especialización no expresada.
+- Conservá exactamente el texto de cada TÉRMINO seleccionado.
+- La selección de TÉRMINOS y la generación de PROPOSICIONES son
+  tareas independientes.
+
+
+==================================================
+FORMATO OBLIGATORIO
+==================================================
 
 "terminos" es una lista de selección, no una lista de evaluación.
 
-Solo incluye en "terminos" los términos seleccionados.
+Incluí en "terminos" únicamente los TÉRMINOS seleccionados.
 
-Los términos no seleccionados deben omitirse completamente.
+Los TÉRMINOS no seleccionados deben omitirse completamente.
 
-No generes un objeto JSON por cada término candidato.
+No generes un objeto JSON por cada TÉRMINO candidato.
 
 No incluyas evaluaciones negativas, descartes, "true" ni "false".
 
-Debes responder única y exclusivamente con un objeto JSON válido
-que siga estrictamente la siguiente estructura.
-			
-			No incluyas explicaciones, introducciones ni bloques de código Markdown.
-			
-			{
-			  "terminos": [
-			    {
-			      "termino": "Nombre exacto del Término 1",
-			      "justificacion": "Breve fragmento del texto que justifica la selección"
-			    },
-			    {
-			      "termino": "Nombre exacto del Término 2",
-			      "justificacion": "Breve fragmento del texto que justifica la selección"
-			    }
-			  ],
-			  "propositions": [
-			    "Proposición o conclusión jurídica derivada del análisis 1",
-			    "Proposición o conclusión jurídica derivada del análisis 2"
-			  ]
-			}
-			
-			Cada término candidato puede aparecer como máximo una vez en "terminos".
-			
-			Nunca repitas un término ya evaluado.
-			
-			No incluyas en "terminos" ningún término que no pertenezca a la lista
-			de términos candidatos recibidos.
-			
-			La cantidad de elementos de "terminos" nunca puede superar
-			la cantidad de términos candidatos recibidos.
-			
-			No agregues texto antes ni después del JSON.
+Respondé única y exclusivamente con un objeto JSON válido que siga
+estrictamente esta estructura:
+
+{
+  "terminos": [
+    {
+      "termino": "Nombre exacto del TÉRMINO 1",
+      "justificacion": "Fragmento breve del TEXTO JUDICIAL que justifica la selección"
+    },
+    {
+      "termino": "Nombre exacto del TÉRMINO 2",
+      "justificacion": "Fragmento breve del TEXTO JUDICIAL que justifica la selección"
+    }
+  ],
+  "propositions": [
+    "Proposición jurídica 1",
+    "Proposición jurídica 2"
+  ]
+}
+
+Cada TÉRMINO candidato puede aparecer como máximo una vez en "terminos".
+
+No repitas un TÉRMINO.
+
+No incluyas en "terminos" ningún TÉRMINO que no pertenezca exactamente
+a la lista de candidatos recibidos.
+
+La cantidad de elementos de "terminos" nunca puede superar la cantidad
+de TÉRMINOS candidatos recibidos.
+
+No agregues texto antes ni después del JSON.

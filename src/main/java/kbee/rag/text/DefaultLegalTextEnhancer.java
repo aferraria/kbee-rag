@@ -1,5 +1,6 @@
 package kbee.rag.text;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -113,7 +114,7 @@ public class DefaultLegalTextEnhancer
                     List<String> llmCandidates =
                             candidateVoices.stream()
                                     .limit(
-                                            60
+                                            40
                                     )
                                     .map(
                                             Concept::term
@@ -149,16 +150,46 @@ public class DefaultLegalTextEnhancer
                             	                response
                             	        );
 
+//                            	List<TermDecision> selectedTerms =
+//                            	        distinctTermDecisions(
+//                            	                evaluation.terminos()
+//                            	        );
+//
+//                            	List<Concept> voices =
+//                            	        rebuildSupportedVoices(
+//                            	                candidateVoices,
+//                            	                selectedTerms
+//                            	        );
+                            	
+                            	
+                            	
                             	List<TermDecision> selectedTerms =
                             	        distinctTermDecisions(
                             	                evaluation.terminos()
                             	        );
 
+                            	Set<String> selectedVoiceSet =
+                            	        selectedTerms.stream()
+                            	                .map(TermDecision::termino)
+                            	                .filter(Objects::nonNull)
+                            	                .map(String::trim)
+                            	                .filter(term -> !term.isBlank())
+                            	                .collect(Collectors.toSet());
+
                             	List<Concept> voices =
-                            	        rebuildSupportedVoices(
-                            	                candidateVoices,
-                            	                selectedTerms
-                            	        );
+                            	        candidateVoices == null
+                            	                ? List.of()
+                            	                : candidateVoices.stream()
+                            	                        .filter(Objects::nonNull)
+                            	                        .filter(concept ->
+                            	                                concept.term() != null
+                            	                                        && selectedVoiceSet.contains(
+                            	                                                concept.term().trim()
+                            	                                        )
+                            	                        )
+                            	                        .toList();
+                            	
+                            	
 
                                 List<String> propositions =
                                         evaluation.propositions() == null
@@ -776,7 +807,7 @@ public class DefaultLegalTextEnhancer
                         promptName
                 );
 
-        LlmRequest request =
+         LlmRequest request =
                 new LlmRequest(
                         instructions,
                         data,
@@ -889,20 +920,47 @@ public class DefaultLegalTextEnhancer
                 continue;
             }
 
-            List<String> selectedTerms =
+//            List<String> selectedTerms =
+//                    normalizeTerms(
+//                            segmentEvaluation.terminos()
+//                    );
+//
+//            List<Concept> voices =
+//                    rebuildSupportedVoicesFromTerms(
+//                            input.candidateVoices(),
+//                            selectedTerms
+//                    );
+            
+            List<String> selectedVoices =
                     normalizeTerms(
                             segmentEvaluation.terminos()
                     );
 
+            Set<String> selectedVoiceSet =
+                    Set.copyOf(
+                            selectedVoices
+                    );
+
             /*
-             * Cada segmento se reconstruye exclusivamente
-             * contra sus propios candidatos.
+             * Conjunto cerrado:
+             * sólo aceptamos voces que estaban entre
+             * los candidatos originales del segmento.
              */
             List<Concept> voices =
-                    rebuildSupportedVoicesFromTerms(
-                            input.candidateVoices(),
-                            selectedTerms
-                    );
+                    input.candidateVoices() == null
+                            ? List.of()
+                            : input.candidateVoices()
+                                    .stream()
+                                    .filter(
+                                            Objects::nonNull
+                                    )
+                                    .filter(concept ->
+                                            concept.term() != null
+                                                    && selectedVoiceSet.contains(
+                                                            concept.term().trim()
+                                                    )
+                                    )
+                                    .toList();
 
             List<String> propositions =
                     normalizePropositions(
@@ -985,6 +1043,102 @@ public class DefaultLegalTextEnhancer
     }
     
     private String buildBatchTextData(
+            List<BatchCandidateInput> inputs) {
+
+        StringBuilder data =
+                new StringBuilder();
+
+        for (BatchCandidateInput input :
+                inputs) {
+
+            if (input.text() == null
+                    || input.text().isBlank()) {
+
+                continue;
+            }
+
+            List<String> voices =
+                    input.candidateVoices() == null
+                            ? List.of()
+                            : input.candidateVoices()
+                                    .stream()
+                                    .filter(
+                                            Objects::nonNull
+                                    )
+                                    .map(
+                                            Concept::term
+                                    )
+                                    .filter(
+                                            Objects::nonNull
+                                    )
+                                    .map(
+                                            String::trim
+                                    )
+                                    .filter(voice ->
+                                            !voice.isBlank()
+                                    )
+                                    .distinct()
+                                    .toList();
+
+            String voicesText =
+                    voices.isEmpty()
+                            ? "(sin voces)"
+                            : String.join(
+                                    "\n",
+                                    voices
+                            );
+
+            data.append(
+                    "=== SEGMENTO ===\n"
+            );
+
+            data.append(
+                    "ID: "
+            );
+
+            data.append(
+                    input.id()
+            );
+
+            data.append(
+                    "\n\n"
+            );
+
+            data.append(
+                    "=== TEXTO ===\n\n"
+            );
+
+            data.append(
+                    input.text()
+            );
+
+            data.append(
+                    "\n\n"
+            );
+
+            data.append(
+                    "=== VOCES CANDIDATAS ===\n\n"
+            );
+
+            data.append(
+                    voicesText
+            );
+
+            data.append(
+                    "\n\n"
+            );
+
+            data.append(
+                    "=== FIN SEGMENTO ===\n\n"
+            );
+        }
+
+        return data
+                .toString()
+                .trim();
+    }
+    
+    private String buildBatchTextData2(
             List<BatchCandidateInput> inputs) {
 
         StringBuilder data =
@@ -1297,8 +1451,56 @@ public class DefaultLegalTextEnhancer
      * DATOS PARA EL PROMPT
      * =================================================
      */
-
+    
+    /*
+     * =================================================
+     * DATOS PARA EL PROMPT
+     * =================================================
+     */
     private String buildTextData(
+            String text,
+            List<String> candidateConcepts) {
+
+        List<String> voices =
+                candidateConcepts == null
+                        ? List.of()
+                        : candidateConcepts.stream()
+                                .filter(
+                                        Objects::nonNull
+                                )
+                                .map(
+                                        String::trim
+                                )
+                                .filter(voice ->
+                                        !voice.isBlank()
+                                )
+                                .distinct()
+                                .toList();
+
+        String voicesText =
+                voices.isEmpty()
+                        ? "(sin voces)"
+                        : String.join(
+                                "\n",
+                                voices
+                        );
+
+        return """
+            === TEXTO ===
+
+            %s
+
+            === VOCES CANDIDATAS ===
+
+            %s
+
+            """.formatted(
+                text,
+                voicesText
+        );
+    }
+
+    private String buildTextData2(
             String text,
             List<String> candidateConcepts) {
 

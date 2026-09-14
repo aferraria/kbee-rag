@@ -229,14 +229,34 @@ public class JudicialDocumentDao
     private String getLogicalDocumentId(
             SegmentSearchResult result) {
 
-        /*
-         * Acá ponemos la lógica real para que
-         * fallo y sumarios asociados terminen bajo
-         * el mismo documento lógico.
-         *
-         * Por ahora:
-         */
-        return result.documentId();
+        String documentId =
+                result.documentId();
+
+        if (documentId == null) {
+            return null;
+        }
+
+        if (documentId.startsWith(
+                "sumario-fallo-"
+        )) {
+
+            String value =
+                    documentId.substring(
+                            "sumario-".length()
+                    );
+
+            int lastDash =
+                    value.lastIndexOf('-');
+
+            if (lastDash > 0) {
+                return value.substring(
+                        0,
+                        lastDash
+                );
+            }
+        }
+
+        return documentId;
     }
 
     /*

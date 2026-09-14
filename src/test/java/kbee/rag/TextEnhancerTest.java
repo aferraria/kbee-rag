@@ -1,6 +1,9 @@
 package kbee.rag;
 
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -13,22 +16,27 @@ import kbee.rag.event.QuestionEnhancedEvent;
 import kbee.rag.search.QuestionEnhancer;
 import kbee.rag.segment.SegmentEnhancer;
 import kbee.rag.segment.TextSegment;
+import kbee.rag.text.LegalEnhancement;
+import kbee.rag.text.LegalTextEnhancer;
 
 @SpringBootTest
 class TextEnhancerTest {
 
 
-    private final SegmentEnhancer segmentEnhancer;
+	private final SegmentEnhancer segmentEnhancer;
 
-    TextEnhancerTest(
-            @Autowired
-            SegmentEnhancer segmentEnhancer) {
+	private final LegalTextEnhancer legalTextEnhancer;
 
-        this.segmentEnhancer =
-                segmentEnhancer;
-        
+	TextEnhancerTest(
+	        @Autowired SegmentEnhancer segmentEnhancer,
+	        @Autowired LegalTextEnhancer legalTextEnhancer) {
 
-    }
+	    this.segmentEnhancer =
+	            segmentEnhancer;
+
+	    this.legalTextEnhancer =
+	            legalTextEnhancer;
+	}
     
     @Test
     void shouldExtractVoices() throws Exception {
@@ -45,7 +53,7 @@ class TextEnhancerTest {
     	
         String segmentText1 =
                 """
-        		Antecedentes acerca de un policía que mató a ladrones en Rosario. Fue condenado por una filmación y luego la Corte revirtió la sentencia.
+        		La presente queja habrá de prosperar parcialmente.
                 """;
         
         String segmentText2 =
@@ -81,35 +89,31 @@ Finalmente, con relación a los rubros indemnizatorios demandados, el Colegiado 
         	
         String segmentText8 =
                 """
-        
-T. 2025, SENTENCIA NRO. 330
-
-En la Provincia de Santa Fe, a los once días del mes de junio del año dos mil veinticinco, los señores Ministros de la Corte Suprema de Justicia de la Provincia, doctores Daniel Aníbal Erbetta, Rafael Francisco Gutiérrez, Eduardo Guillermo Spuler y Margarita Elsa Zabalza, con la presidencia de su titular doctor Roberto Héctor Falistocco, acordaron dictar sentencia en los autos caratulados "SBRISSA, Daniel Antonio contra PROVINCIA DE SANTA FE -RCA- (CUIJ 21-17455462-2) sobre RECURSO DE INCONSTITUCIONALIDAD (PARCIALMENTE CONCEDIDO POR LA CÁMARA)" (Expte. C.S.J. CUIJ N° 21-17455462-2). Se resolvió someter a decisión las siguientes cuestiones: PRIMERA: ¿es admisible el recurso interpuesto? SEGUNDA: en su caso, ¿es procedente? TERCERA: en consecuencia, ¿qué resolución corresponde dictar? Asimismo, se emitieron los votos en el orden que realizaron el estudio de la causa, o sea doctores Gutiérrez, Spuler, Erbetta, Falistocco y Zabalza.
-Segment :I.1. Surge de las constancias de autos que Daniel Antonio Sbrissa interpuso recurso contencioso administrativo contra la Provincia de Santa Fe tendente a obtener que se disponga la nulidad del decreto 3316/17; y que, en su lugar, se ordene a la Caja provincial que efectúe el reajuste de su haber previsional debido a la ausencia de razonable proporcionalidad con el sueldo de un agente en actividad, abonándosele el retroactivo generado desde dos años previos al reclamo administrativo; con más intereses y costas.
-
-Expuso -en síntesis- que prestó servicios en la órbita del Ministerio de Seguridad de la Provincia durante 25 años, y 5 años en el ámbito nacional, todos ellos computables a los fines jubilatorios; que obtuvo el beneficio de jubilación ordinaria en el año 2006; que el 28.8.2013 presentó un reclamo administrativo con el fin de obtener el reajuste de su haber por no guardar razonable proporcionalidad con el sueldo de un agente en actividad; y que tal reclamo fue finalmente rechazado a través del decreto que impugna.
-
-Dijo que su haber jubilatorio "no acompañó los aumentos de sueldos que fueron otorgados a las personas en actividad, con el mismo cargo y antigüedad que el que poseía, desvirtuándose la garantía de movilidad que debe otorgarse a los beneficios de la Seguridad Social, según el mandato constitucional" .
-
-Rechazó, asimismo, la quita efectuada en su haber jubilatorio, con base en el precedente "Lagger" de esta Corte.
-Segment :Por último, sostuvo que para establecer las diferencias con el sueldo de un agente en actividad deben computarse todos los rubros que liquida la Provincia de Santa Fe.
-
-b. Al contestar la demanda, la Provincia de Santa Fe argumentó -en suma- que "no hay hasta el momento elemento probatorio alguno del cual surja que la aplicación del sistema de movilización de los haberes de pasividad haya provocado durante el período que reclama el Sr. Sbrissa una irrazonable desproporción entre los dos términos que se invocan en la comparación para arribar a la conclusión de que se verifica la desproporción que torna confiscatorio el haber".
-
-Señaló que en el sistema de la ley 6915 ni la evolución del cargo desempeñado por el pasivo al momento de obtener la jubilación, ni la remuneración del cargo luego del cese, son pautas para lograr el reajuste de su haber, sino que ello ocurre a partir de la aplicación de los coeficientes sectoriales que fija el Poder Ejecutivo en función de las variaciones de las remuneraciones del personal en actividad, y sólo si su utilización produce una irrazonable desproporción puede admitirse limitadamente el reajuste, lo que no se encuentra probado en autos.
-
-Añadió que si la implementación de este sistema legal genera afectaciones de índole constitucional, la teoría de la razonable proporcionalidad brinda el sistema de clausura para recomponer los haberes de pasividad que hayan resultado ilegítimamente afectados por la aplicación del mecanismo en cuestión.
-                """;
+        		En tal sentido, este Tribunal expuso que si bien el \"principio nominalista\" -que rige desde el año 1991 con la entrada en vigencia de la ley 23928, y que había sido 
+        		reiteradamente convalidado por la Corte Suprema de Justicia de la Nación (Fallos: 329:385; 333:447; 339:1583)- veda la actualización o indexación de deudas dinerarias, 
+        		el sistema diseñado por el legislador provincial mediante la ley 12851 -con la instauración, en el ámbito de la regulación de estipendios profesionales, de la unidad \"jus\",
+        		 equivalente al 2% de la remuneración total (deducidos los adicionales porcentuales particulares) asignada al cargo de Juez de Primera Instancia de Distrito- constituye un mecanismo 
+        		 indirecto de recomposición del capital correspondiente al crédito por honorarios, que se enmarca en la categoría de las \"obligaciones de valor\" y que, por tanto, queda al margen del 
+        		 principio nominalista de la ley 23928 hasta su conversión en deuda de dinero, transformación que tendrá lugar al adquirir firmeza la regulación respectiva -momento en el cual, además, 
+        		 se tornará exigible el pago de la obligación-; y que de allí en adelante, al entrar en funcionamiento la prohibición de los artículos 7 y 10 de la ley 23928, la integridad del crédito 
+        		 pasará a ser resguardada mediante el interés a devengarse con la mora del deudor, con arreglo a lo normado en el mismo artículo 32 de la ley 6767 antes citado;
+        		                """;
         
         String segmentText9 =
         """
-        Mediante resolución N° 62 de fecha 5 de junio de 2024 (f. 1165) la Sala Segunda de la Cámara de Apelación en lo Civil y Comercial de Santa Fe declaró admisible el recurso de inconstitucionalidad deducido por la Provincia de Santa Fe contra la sentencia N° 72 emitida por dicho Tribunal en fecha 3 de mayo de 2023 (fs. 1099/1118).
-
-        El nuevo examen de admisibilidad -que corresponde a esta Corte efectuar por imperio del artículo 11 de la ley 7055, con los principales a la vista-, me conduce a ratificar esa conclusión, de conformidad con lo dictaminado por el señor Procurador General Subrogante (fs. 1176). 
-
-        Voto, pues, por la afirmativa.
-
-        A la misma cuestión, el señor Ministro doctor Gutiérrez, el señor Presidente doctor Falistocco, la señora Ministra doctora Gastaldi y el señor Ministro doctor Erbetta expresaron idénticos fundamentos a los vertidos por el señor Ministro doctor Spuler y votaron en igual sentido.
+        		        Con base en el relato efectuado precedentemente, se adelanta que merecen favorable acogida los 
+        		        agravios vinculados con la arbitrariedad del pronunciamiento impugnado por rechazar la falta de acción a pesar de la renuncia 
+        		        expresa formulada por los ahora actores.\n\n
+        		        En efecto, teniendo en cuenta que se halla fuera de toda discusión que los accionantes recibieron el pago de la \"ayuda extraordinaria\" contemplada en el 
+        		        régimen reparatorio especial establecido por ley 12183 (modif. por ley 12259), la cuestión planteada es sustancialmente análoga a la considerada y 
+        		        resuelta por este Tribunal en los precedentes \"Villa\" y \"Ulrich\" (A. y S. nro. 82 y nro. 83, año 2024), a cuyos 
+        		        fundamentos se remite en lo pertinente, y se dan aquí por reproducidos por razones de economía procesal.\n\nSentada en dichos 
+        		        precedentes la disponibilidad de los derechos patrimoniales en juego, resta aquí añadir que en aquellos fallos esta Corte descartó que la vulnerabilidad, 
+        		        urgencia o necesidad fueran fundamentos suficientes para declarar la inconstitucionalidad del artículo 7 de la ley 12183, y 
+        		        expresó que tales circunstancias podrían a lo sumo ser ponderadas por los Sentenciantes, eventualmente, a fin de examinar la existencia de algún 
+        		        vicio de la voluntad nulificante de los respectivos actos jurídicos de renuncia. 
+        		        Se hizo especial énfasis en que una solución de ese tipo debía basarse en esfuerzos argumentales y 
+        		        probatorios específicos que en tal sentido hubiese desplegado el accionante.
         """;
         
         
@@ -152,26 +156,283 @@ Añadió que si la implementación de este sistema legal genera afectaciones de 
                         Map.of()
                 );
 
-        
-        long start = System.currentTimeMillis();
-        
-        TextSegment enhanced=
+  
+        /*
+         * ==========================================
+         * INDIVIDUAL
+         * ==========================================
+         */
+
+        long individualStart =
+                System.currentTimeMillis();
+
+        TextSegment individual =
                 segmentEnhancer
-                        .enhance(segment)
-                        .doOnNext(embeddingText -> {
-                            System.out.println(
-                                    embeddingText
-                            );
-                        })
-                        .block(); 
-        
-        long end = System.currentTimeMillis();
-        
-        System.out.println(text);
-        
-    	System.out.println("Time: "+(end-start)/1000);
+                        .enhance(
+                                segment
+                        )
+                        .block();
+
+        long individualEnd =
+                System.currentTimeMillis();
+
+          /*
+         * ==========================================
+         * BATCH
+         *
+         * IMPORTANTE:
+         * usamos EXACTAMENTE el mismo segmento.
+         * ==========================================
+         */
+
+        long batchStart =
+                System.currentTimeMillis();
+
+        List<TextSegment> batch =
+                segmentEnhancer
+                        .enhance(
+                                List.of(
+                                        segment
+                                )
+                        )
+                        .block();
+
+        long batchEnd =
+                System.currentTimeMillis();
+
+  
+        TextSegment batchSegment =
+                batch.get(0);
+
+        /*
+         * ==========================================
+         * RESULTADOS
+         * ==========================================
+         */
+
+        System.out.println();
+        System.out.println(
+                "=========================================="
+        );
+        System.out.println(
+                "INDIVIDUAL"
+        );
+        System.out.println(
+                "=========================================="
+        );
+
+        System.out.println(
+                individual
+        );
+
+        System.out.println();
+
+        System.out.printf(
+                "Individual time: %.3f s%n",
+                (individualEnd - individualStart)
+                        / 1000.0
+        );
+
+        System.out.println();
+        System.out.println(
+                "=========================================="
+        );
+        System.out.println(
+                "BATCH"
+        );
+        System.out.println(
+                "=========================================="
+        );
+
+        System.out.println(
+                batchSegment
+        );
+
+        System.out.println();
+
+        System.out.printf(
+                "Batch time: %.3f s%n",
+                (batchEnd - batchStart)
+                        / 1000.0
+        );
+
+      
+    }
+    
+    //@Test
+    void shouldEnhanceFourSegmentsIndependently() {
+    	
+    	List<String> texts = List.of(
+
+    	        """
+    	        T. 2025, SENTENCIA NRO. 450
+
+    	        Provincia de Santa Fe, 29 de julio del año 2025.
+    	        """,
+
+    	        """
+    	        La queja por denegación del recurso de inconstitucionalidad interpuesto
+    	        por el abogado Norberto Francisco José Berlanga contra el auto número
+    	        233 de fecha 15 de octubre de 2024, dictado por la Sala Primera
+    	        -integrada- de la Cámara de Apelación en lo Civil y Comercial de la
+    	        ciudad de Santa Fe, en autos "VERONESE, CLAUDIA contra RECORD
+    	        PUBLICISTAS S.R.L. Y OTROS -INCID DE INOP DE INSC BIEN FAM
+    	        (CUIJ 21-00834525-9)" (Expte. C.S.J. CUIJ Nº: 21-00516437-8); y,
+    	        """,
+
+    	        """
+    	        Mediante resolución 233 del 15 de octubre de 2024, la Sala Primera
+    	        integrada de la Cámara de Apelación en lo Civil y Comercial de Santa Fe
+    	        rechazó el recurso de reposición deducido por el doctor Berlanga contra
+    	        la providencia de fecha 06.08.2024 dictada por el Vocal de trámite
+    	        -quien, a su turno, había desestimado la petición del letrado orientada
+    	        al reajuste de los honorarios regulados por la actuación profesional
+    	        desarrollada en la segunda instancia de un incidente concursal-.
+
+    	        Contra tal pronunciamiento interpone el curial recurso de
+    	        inconstitucionalidad, con invocación de las causales previstas en el
+    	        artículo 1 -incisos 2° y 3°- de la ley 7055, tachándolo de arbitrario,
+    	        contrario a la Constitución y a la ley arancelaria, y carente de
+    	        motivación suficiente.
+
+    	        En fundamentación del recurso impetrado, reseña que los presentes se
+    	        originaron a partir de su solicitud, formulada ante el Tribunal de
+    	        Alzada, orientada al reajuste de los honorarios regulados por su labor
+    	        profesional desplegada en el marco de un incidente concursal en segunda
+    	        instancia, el cual tenía por objeto -recuerda- la declaración de
+    	        inoponibilidad de la inscripción como bien de familia de un inmueble de
+    	        la fallida, en orden a posibilitar su ulterior subasta en el trámite de
+    	        quiebra liquidativa; remarca que aquella petición se sustentaba en lo
+    	        establecido en los artículos 8, inciso h), y 32 de la ley 6737
+    	        -y sus modificatorias-.
+    	        """,
+
+    	        """
+    	        Destaca que los honorarios en cuestión habían sido regulados mediante
+    	        auto de fecha 19.08.2008 en 30,83 jus, equivalentes en aquel entonces a
+    	        $4.523,08, determinándose el interés moratorio a una tasa del 12% anual;
+    	        entiende que la denegación del reajuste peticionado prescinde del actual
+    	        contexto inflacionario, a la vez que se aparta de lo normado en la ley
+    	        arancelaria acerca del valor actualizado del jus, careciendo asimismo
+    	        de toda conexión con el precio de subasta del inmueble involucrado en
+    	        el proceso incidental de marras; todo ello -prosigue- con grave
+    	        afectación de sus derechos fundamentales de propiedad y justa
+    	        retribución, proporcional al esfuerzo desplegado y a los intereses
+    	        económicos comprometidos.
+
+    	        Alega que la decisión recurrida carece de motivación adecuada, tanto en
+    	        punto al planteo de inconstitucionalidad de las normas que prohíben la
+    	        actualización o indexación de deudas dinerarias, como en relación a la
+    	        postulación acerca de la naturaleza del crédito por honorarios como
+    	        obligación de valor y, asimismo, respecto de la aplicabilidad del
+    	        artículo 8, inciso h), de la ley 6767, al igual que en torno al
+    	        mantenimiento de la misma tasa de interés.
+    	        """
+    	);
+    	
+
+        List<String> texts2 = List.of(
+
+                // ID 1
+                """
+                La presente queja habrá de prosperar parcialmente.
+                """,
+
+                // ID 2
+                """
+                Liminarmente corresponde señalar que si bien el presentante dice
+                encuadrar su impugnación en los incisos 2° y 3° del artículo 1
+                de la ley 7055, lo concreto es que no se observa que en el caso
+                se encuentre cuestionada la inteligencia de un precepto de la
+                Constitución en sí mismo, pues todos sus planteos giran en torno
+                a la alegada arbitrariedad del fallo de la Sala y su supuesta
+                incompatibilidad con los derechos y garantías fundamentales que
+                se afirman vulnerados, resultando por tanto subsumibles en la
+                hipótesis prevista en el inciso 3° de la norma citada, bajo cuya
+                óptica corresponde que sean analizados.
+
+                A su vez, debe recordarse que el memorial del recurso de
+                inconstitucionalidad no es susceptible de ser mejorado ni ampliado
+                en la queja, la cual debe fundarse en relación a la motivación del
+                auto denegatorio.
+                """,
+
+                // ID 3
+                """
+                Sentado lo anterior, es posible advertir que la mayoría de las
+                causales de descalificación propuestas en el memorial recursivo,
+                de entre las cuestiones que oportunamente se plantearon y
+                mantuvieron en autos, no pueden trasponer el umbral de
+                admisibilidad de la vía establecida en la ley 7055, en tanto no
+                logran superar el nivel de la simple discrepancia respecto del
+                resultado de un debate en torno a la interpretación y alcance de
+                normas arancelarias, quedando comprendidas dentro del amplio
+                margen que en la materia se confiere a la razonable prudencia
+                de los jueces de la causa.
+                """,
+
+                // ID 4
+                """
+                En efecto, en lo tocante al achaque de falta de fundamentación
+                enderezado contra la denegación del reajuste de honorarios
+                pretendido en los términos del artículo 32 de la ley 6737,
+                en vinculación con el rechazo del planteo de inconstitucionalidad
+                de los artículos 7 y 10 de la ley 23928 y con las postulaciones
+                en torno a la naturaleza de la obligación, se advierte que lo
+                decidido por la Sala aparece expresamente sustentado en la
+                doctrina sentada por este Cuerpo.
+
+                Así, en el citado precedente de esta Corte se abordó la cuestión
+                de la validez constitucional de la denominada "unidad jus"
+                prevista en el artículo 32 de la ley 6767 en confrontación con
+                la prohibición de indexar obligaciones dinerarias dispuesta por
+                ley 23928, propiciándose una razonable compatibilidad de las
+                normas en juego.
+                """
+        );
+
+        List<LegalEnhancement> result =
+                legalTextEnhancer
+                        .enhance(
+                                texts,
+                                "segment-batch-enrichment"
+                        )
+                        .block();
+
+        assertNotNull(result);
+        assertEquals(4, result.size());
+
+        result.forEach(enhancement -> {
+            assertNotNull(enhancement);
+            assertNotNull(enhancement.concepts());
+            assertNotNull(enhancement.propositions());
+        });
+
+        System.out.println();
+        System.out.println("===== BATCH RESULT =====");
+
+        for (int i = 0; i < result.size(); i++) {
+
+            LegalEnhancement enhancement =
+                    result.get(i);
+
+            System.out.println();
+            System.out.println(
+                    "===== SEGMENT " + (i + 1) + " ====="
+            );
+
+            System.out.println("Concepts:");
+
+            enhancement.concepts()
+                    .forEach(System.out::println);
+
+            System.out.println("Propositions:");
+
+            enhancement.propositions()
+                    .forEach(System.out::println);
+        }
+    }
 
     
 
-}
 }

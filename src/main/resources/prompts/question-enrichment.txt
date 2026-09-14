@@ -1,88 +1,175 @@
-  TAREA
+TAREA
 
-            Recibirás:
+Recibirás:
 
-            1. una CONSULTA;
-            2. una lista de TÉRMINOS candidatos de un tesauro.
+1. una CONSULTA;
+2. una lista cerrada de TÉRMINOS candidatos de un tesauro jurídico.
 
-            Debés realizar dos tareas independientes:
+Debés realizar dos tareas independientes:
 
-            A) evaluar los términos;
-            B) generar proposiciones jurídicas de la consulta.
-
-
-            EVALUACION DE TERMINOS
-
-            Evaluá cada término de forma independiente.
-
-            Un término está respaldado si:
-
-            - aparece expresado en la CONSULTA; o
-            - es una reformulación directa e inequívoca de algo expresado
-              en la CONSULTA.
-
-            No asumas información que no esté en la CONSULTA.
-
-            No uses los demás términos de la lista para decidir si un
-            término está respaldado.
-
-            No tengas en cuenta relaciones jerárquicas entre términos ni
-            posibles conceptos del tesauro a los que puedan pertenecer.
-
-            Si para considerar respaldado un término necesitás agregar un
-            sujeto, contexto, procedimiento, causa, consecuencia, condición
-            o situación que no esté expresada en la CONSULTA, indicá false.
-
-            Si tenés dudas, indicá false.
-
-            Evaluá todos los términos de la lista.
+A) seleccionar los TÉRMINOS respaldados por la CONSULTA;
+B) generar PROPOSICIONES JURÍDICAS a partir de la CONSULTA.
 
 
-            PROPOSICIONES
+==================================================
+A) SELECCIÓN DE TÉRMINOS
+==================================================
 
-            Generá proposiciones jurídicas únicamente a partir de la CONSULTA.
+seleccioná únicamente los TÉRMINOS de la lista
+de candidatos que representen de forma directa e inequívoca conceptos
+jurídicos contenidos en LA CONSULTA
 
-            Una proposición debe expresar de forma autónoma y concisa una
-            cuestión jurídica contenida en la CONSULTA.
+La lista de candidatos de cada segmento es cerrada.
 
-            No utilices los TÉRMINOS candidatos para generar las proposiciones.
+No inventes, modifiques ni reformules TÉRMINOS.
 
-            Las proposiciones deben poder generarse exactamente de la misma
-            manera aunque la lista de TÉRMINOS no hubiera sido suministrada.
+No uses conocimiento externo, otros segmentos ni otros candidatos
+para justificar un TÉRMINO.
 
-            No agregues hechos, causas, consecuencias, requisitos, decisiones,
-            obligaciones ni relaciones que no estén expresados en la CONSULTA.
+La semejanza temática, semántica o la coincidencia de palabras no son
+suficientes.
 
-            No afirmes que existe un precedente ni que un tribunal resolvió
-            determinada cuestión si la CONSULTA solamente está solicitando
-            encontrar un precedente.
+Un TÉRMINO está justificado únicamente cuando el concepto que expresa:
 
-            Evitá proposiciones redundantes.
+- aparece explícitamente en la CONSULTA o
+- constituye una reformulación directa e inequívoca de algo expresado
+  en la CONSULTAL.
 
-            Generá como máximo 10 proposiciones.
+Si para justificar un TÉRMINO es necesario inferir o agregar información
+que la CONSULTA no expresa, no lo selecciones.
 
 
-            FORMATO OBLIGATORIO
-            
-            "terminos" es una lista de selección, no una lista de evaluación.
+VOCES JERÁRQUICAS
 
-Solo incluye en "terminos" los términos seleccionados.
+El carácter ">" separa un TÉRMINO jerárquico en sus componentes.
 
-Los términos no seleccionados deben omitirse completamente.
+Ejemplo:
 
-            Respondé únicamente con JSON válido con esta estructura:
+HONORARIOS > REGULACION FIRME
 
-            {
-              "terminos": {
-                "TERMINO 1": true,
-                "TERMINO 2": false
-              },
-              "propositions": [
-                "Proposición 1",
-                "Proposición 2"
-              ]
-            }
+es un único TÉRMINO compuesto por:
 
-            No expliques ni justifiques las decisiones.
+HONORARIOS
+REGULACION FIRME
 
-            No agregues texto antes ni después del JSON.
+Seleccioná un TÉRMINO jerárquico únicamente si TODOS sus componentes
+están justificados por la consulta
+
+Cada componente debe estar justificado de manera independiente según
+las reglas anteriores.
+
+Si UN componente no está justificado, no incluyas el TÉRMINO en la respuesta.
+
+Los componentes pueden estar justificados en distintas partes de la misma
+CONSULTAL; no necesitan aparecer juntos, consecutivamente ni en la
+misma oración.
+
+Si el primer componente es "DERECHO", ignoralo para esta evaluación.
+
+Conservá siempre el TÉRMINO completo exactamente como aparece en la lista
+de candidatos.
+
+No devuelvas sus componentes por separado.
+
+
+REGLA DE CENTRALIDAD JURÍDICA
+
+No selecciones un TÉRMINO únicamente porque aparezca literalmente en el texto.
+
+Seleccioná prioritariamente los TÉRMINOS que representen la regla,
+institución, relación o consecuencia jurídica desarrollada en el segmento.
+
+No selecciones conceptos que aparezcan sólo como datos instrumentales,
+descriptivos o accesorios.
+
+Si el texto establece una consecuencia jurídica asociada a un concepto
+candidato, ese concepto debe tener prioridad sobre términos que sólo
+describen elementos secundarios del razonamiento.
+
+Ejemplo:
+
+Si el texto establece que una obligación se convierte en deuda de dinero
+cuando adquiere firmeza una regulación de honorarios, debe priorizarse
+
+HONORARIOS > REGULACION FIRME
+
+frente a términos relativos al cargo del juez, la remuneración o sus
+adicionales.
+
+==================================================
+B) PROPOSICIONES JURÍDICAS
+==================================================
+
+Generá, únicamente a partir de la CONSULTA, las cuestiones jurídicas que el usuario busca.
+
+Expresalas como formulaciones nominales y neutrales, no como respuestas o conclusiones.
+
+Eliminá únicamente expresiones de búsqueda como "precedente sobre",
+"jurisprudencia sobre" o equivalentes.
+
+No agregues información ni calificaciones jurídicas ausentes de la CONSULTA.
+
+No elimines información sustantiva presente en la CONSULTA que permita
+identificar o delimitar la cuestión jurídica buscada.
+
+Conservá literalmente los identificadores específicos presentes en la CONSULTA,
+incluyendo, entre otros:
+
+- números de leyes;
+- números de artículos;
+- decretos;
+- resoluciones;
+- acordadas;
+- números de expediente;
+- nombres propios de normas;
+- nombres de precedentes.
+
+Estos identificadores forman parte de la cuestión jurídica y no deben
+generalizarse, resumirse ni eliminarse.
+
+No uses los TÉRMINOS candidatos.
+
+Generá una sola proposición, salvo que la CONSULTA contenga claramente más
+de una cuestión jurídica independiente.
+
+==================================================
+REGLAS ESTRICTAS
+==================================================
+
+- No uses conocimiento jurídico externo.
+- No agregues información ausente de la CONSULTA.
+- No elimines información jurídicamente relevante presente en la CONSULTA.
+- No inventes TÉRMINOS.
+- No inventes hechos ni soluciones jurídicas.
+- No selecciones TÉRMINOS por mera asociación temática.
+- No selecciones una especialización no expresada.
+- Conservá exactamente el texto de cada TÉRMINO seleccionado.
+- La selección de TÉRMINOS y la generación de PROPOSICIONES son tareas independientes.
+
+==================================================
+FORMATO OBLIGATORIO
+==================================================
+
+Respondé únicamente con JSON válido con esta estructura:
+
+{
+  "terminos": [
+    "TERMINO 1",
+    "TERMINO 2"
+  ],
+  "propositions": [
+    "Proposición 1",
+    "Proposición 2"
+  ]
+}
+
+"terminos" debe contener exclusivamente los TÉRMINOS seleccionados.
+
+Los TÉRMINOS no seleccionados deben omitirse completamente.
+
+"propositions" debe contener exclusivamente proposiciones derivadas
+de la CONSULTA.
+
+No expliques ni justifiques las decisiones.
+
+No agregues texto antes ni después del JSON.

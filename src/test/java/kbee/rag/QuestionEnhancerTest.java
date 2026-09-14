@@ -48,7 +48,28 @@ class QuestionEnhancerTest {
         Antecedentes acerca de un policía que mató a ladrones en Rosario. Fue condenado por una filmación y luego la Corte revirtió la sentencia.
                 """;
         
-        String question = q3 		;
+        String q4 =
+                """
+		La presente queja habrá de prosperar parcialmente.
+                """;
+        
+        String q5 =
+                """
+        Precedente sobre si honorarios profesionales son obligación de valor u obligación de dinero una vez que la regulación queda firme"
+                """;
+        
+        String q6 =
+                """
+Precedente sobre posibilidad de reajuste de regulación de honorarios profesionales
+                """;
+        
+        
+        String q7 =
+                """
+Precedente donde se realice una interpretación de la ley Ley 12183                """;
+
+        
+        String question = q7 		;
         
         long start = System.currentTimeMillis();
         

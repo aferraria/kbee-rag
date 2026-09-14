@@ -63,16 +63,38 @@ public class ThesaurusIndexerCommand
 
         System.out.println(
                 "Voces únicas encontradas: "
-                + terms.size()
+                        + terms.size()
         );
 
         /*
-         * 2. Creamos un documento Solr por voz,
-         *    con embedding propio.
+         * 2. Eliminamos el índice de voces anterior.
+         *
+         * IMPORTANTE:
+         * esto no afecta fallos ni sumarios.
          */
-        indexTerms(terms);
+        System.out.println(
+                "Eliminando voces de tesauro existentes..."
+        );
 
-        solrClient.commit(segmentCore);
+        solrClient.deleteByQuery(
+                segmentCore,
+                "document_type:thesaurus"
+        );
+
+        solrClient.commit(
+                segmentCore
+        );
+
+        /*
+         * 3. Volvemos a crear todas las voces.
+         */
+        indexTerms(
+                terms
+        );
+
+        solrClient.commit(
+                segmentCore
+        );
 
         System.out.println(
                 "===== THESAURUS INDEXER END ====="
@@ -190,20 +212,27 @@ public class ThesaurusIndexerCommand
 
         for (String term : terms) {
 
-            /*
-             * Un embedding independiente
-             * para cada voz del tesauro.
-             *
-             * Adaptá embed(...) al nombre exacto
-             * de tu servicio actual.
-             */
-        	List<String> texts = List.of(term);
+            String termToEmbed =
+                    normalizeForEmbedding(term);
 
-        	List<List<Float>> embeddings =
-        	        embeddingService.embed(texts);
+            List<List<Float>> embeddings =
+                    embeddingService.embed(
+                            List.of(termToEmbed)
+                    );
 
-        	List<Float> embedding =
-        	        embeddings.get(0);
+            if (embeddings == null
+                    || embeddings.isEmpty()
+                    || embeddings.get(0) == null) {
+
+                throw new IllegalStateException(
+                        "No se pudo generar embedding "
+                                + "para la voz: "
+                                + term
+                );
+            }
+
+            List<Float> embedding =
+                    embeddings.get(0);
 
             SolrInputDocument doc =
                     new SolrInputDocument();
@@ -220,6 +249,11 @@ public class ThesaurusIndexerCommand
 
             doc.addField(
                     "thesaurus_term",
+                    term
+            );
+
+            doc.addField(
+                    "thesaurus_es_term",
                     term
             );
 
@@ -244,14 +278,11 @@ public class ThesaurusIndexerCommand
 
                 System.out.println(
                         "Voces indexadas: "
-                        + count
+                                + count
                 );
             }
         }
 
-        /*
-         * Último batch.
-         */
         if (!batch.isEmpty()) {
 
             solrClient.add(
@@ -262,8 +293,18 @@ public class ThesaurusIndexerCommand
 
         System.out.println(
                 "Total voces indexadas: "
-                + count
+                        + count
         );
+    }
+    
+    private String normalizeForEmbedding(
+            String term) {
+
+        return term
+                .replace(".", " ")
+                .replace(">", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
     }
 
     private boolean isValidTerm(

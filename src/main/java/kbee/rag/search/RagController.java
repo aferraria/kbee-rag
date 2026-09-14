@@ -45,9 +45,11 @@ public class RagController {
 //            throws SolrServerException, IOException {
 //
 //        return ResponseEntity.ok(
-//                ragService.search(request)
-//        );
-//    }
+//     
+
+    
+    
+    
     
     @PostMapping("/document-analysis")
     public Mono<DocumentAnalysisResponse> analyzeDocument(

@@ -288,6 +288,32 @@ public class RagService {
             );
         }
 
+        System.out.println();
+        System.out.println(
+                "===== SOURCES BEFORE RERANK ====="
+        );
+
+        for (int i = 0; i < sources.size(); i++) {
+
+            ExpandedSource source =
+                    sources.get(i);
+
+            SegmentSearchResult selected =
+                    source.selected();
+
+            System.out.printf(
+                    "%d | %s | %s%n",
+                    i,
+                    selected.documentId(),
+                    selected.id()
+            );
+        }
+
+        System.out.println(
+                "================================="
+        );
+        System.out.println();
+
         RerankRequest request =
                 rerankRequestBuilder.build(
                         question,

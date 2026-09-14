@@ -14,20 +14,30 @@ import reactor.core.publisher.Mono;
 public class LegalSegmentEnhancer
         implements SegmentEnhancer {
 
+
     private final LegalTextEnhancer legalTextEnhancer;
 
     private final String segmentPromptName;
 
+    private final String segmentBatchPromptName;
+
     public LegalSegmentEnhancer(
             LegalTextEnhancer legalTextEnhancer,
+
             @Value("${rag.prompts.enrichment.segment}")
-            String segmentPromptName) {
+            String segmentPromptName,
+
+            @Value("${rag.prompts.enrichment.segment-batch}")
+            String segmentBatchPromptName) {
 
         this.legalTextEnhancer =
                 legalTextEnhancer;
 
         this.segmentPromptName =
                 segmentPromptName;
+
+        this.segmentBatchPromptName =
+                segmentBatchPromptName;
     }
 
     @Override
@@ -114,7 +124,7 @@ public class LegalSegmentEnhancer
             return legalTextEnhancer
                     .enhance(
                             texts,
-                            segmentPromptName
+                            segmentBatchPromptName
                     )
                     .map(enhancements -> {
 

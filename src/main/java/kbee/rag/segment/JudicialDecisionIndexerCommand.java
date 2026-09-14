@@ -354,25 +354,25 @@ public class JudicialDecisionIndexerCommand
     private Mono<Void> processTextFile(
             TextFile file) {
 
-        //if (file == null || "sumario".equals(file.type())) {
-        if (file == null) {
+        if (file == null || "sumario".equals(file.type())) {
+        //if (file == null) {
             return Mono.empty();
         }
         
-        if ("fallo".equals(file.type())) {
-        	List<SegmentSearchResult> segments =
-                segmentDao
-                        .findSegments(file.id(), 0, 1)
-                        .collectList()
-                        .blockOptional()
-                        .orElseGet(List::of);
-        	if (!segments.isEmpty()) {
-                return Mono.empty();
-        	}
-        	else {
-        		System.out.println("Fallo faltante");
-        	}
-        }
+//        if ("fallo".equals(file.type())) {
+//        	List<SegmentSearchResult> segments =
+//                segmentDao
+//                        .findSegments(file.id(), 0, 1)
+//                        .collectList()
+//                        .blockOptional()
+//                        .orElseGet(List::of);
+//        	if (!segments.isEmpty()) {
+//                return Mono.empty();
+//        	}
+//        	else {
+//        		System.out.println("Fallo faltante");
+//        	}
+//        }
         
         long start =
                 System.nanoTime();

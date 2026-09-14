@@ -22,6 +22,7 @@
     <properties>
         <java.version>22</java.version>
         <solr.version>10.0.0</solr.version>
+        <lucene.version>10.0.0</lucene.version>
     </properties>
 
     <dependencies>
@@ -49,6 +50,13 @@
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-solrj</artifactId>
             <version>${solr.version}</version>
+        </dependency>
+
+        <!-- Lucene analyzers / Spanish stemming -->
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-analysis-common</artifactId>
+            <version>${lucene.version}</version>
         </dependency>
 
         <!-- Local embeddings -->

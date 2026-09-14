@@ -23,6 +23,7 @@ rag:
     propositions: legal
     enrichment:
        segment: segment-enrichment
+       segment-batch: segment-batch-enrichment
        question: question-enrichment
   
 embedding:

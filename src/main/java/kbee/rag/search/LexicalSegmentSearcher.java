@@ -1,10 +1,12 @@
 package kbee.rag.search;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.springframework.stereotype.Component;
 
@@ -49,7 +51,7 @@ public class LexicalSegmentSearcher
          */
         Flux<SegmentSearchResult> legal =
                 searchLegal(
-                        extended.extendedQuery(),
+                        extended.propositions(),
                         extended.thesaurusTerms(),
                         extended.filters(),
                         extended.topK()
@@ -63,7 +65,7 @@ public class LexicalSegmentSearcher
          */
         Flux<SegmentSearchResult> original =
                 searchOriginal(
-                        extended.extendedQuery(),
+                        extended.query(),
                         extended.filters(),
                         extended.topK()
                 );
@@ -79,15 +81,15 @@ public class LexicalSegmentSearcher
      * LEXICAL LEGAL
      * =================================================
      */
-
+    
     private Flux<SegmentSearchResult> searchLegal(
-            String query,
+            List<String> propositions,
             List<Concept> terms,
             List<String> filters,
             int topK) {
 
-        if (query == null
-                || query.isBlank()) {
+        if ((propositions == null || propositions.isEmpty())
+                && (terms == null || terms.isEmpty())) {
 
             return Flux.empty();
         }
@@ -95,43 +97,41 @@ public class LexicalSegmentSearcher
         ModifiableSolrParams params =
                 new ModifiableSolrParams();
 
-        params.set(
-                "defType",
-                "edismax"
-        );
+        String conceptualQuery =
+                buildConceptualQuery(
+                        terms
+                );
 
-        /*
-         * La query original se compara contra
-         * las proposiciones jurídicas.
-         */
+        String propositionQuery =
+                buildPropositionQuery(
+                        propositions
+                );
+
+        String legalQuery;
+
+        if (conceptualQuery.isBlank()) {
+
+            legalQuery =
+                    propositionQuery;
+
+        } else if (propositionQuery.isBlank()) {
+
+            legalQuery =
+                    conceptualQuery;
+
+        } else {
+
+            legalQuery =
+                    "("
+                            + conceptualQuery
+                            + ") OR ("
+                            + propositionQuery
+                            + ")";
+        }
+
         params.set(
                 "q",
-                query
-        );
-
-        params.set(
-                "qf",
-                "legal_proposition^1"
-        );
-
-        params.set(
-                "pf",
-                "legal_proposition^10"
-        );
-
-        params.set(
-                "pf2",
-                "legal_proposition^4"
-        );
-
-        params.set(
-                "pf3",
-                "legal_proposition^7"
-        );
-
-        params.set(
-                "mm",
-                "10%"
+                legalQuery
         );
 
         params.set(
@@ -139,35 +139,16 @@ public class LexicalSegmentSearcher
                 "OR"
         );
 
-        /*
-         * Filtro general.
-         */
         params.add(
                 "fq",
-                "(document_type:sumario OR document_id:fallo-*)"
+                "(document_type:sumario OR document_type:fallo)"
         );
-        
+
         for (String filter : filters) {
+
             params.add(
                     "fq",
                     filter
-            );
-        }
-
-        /*
-         * Al menos una de las voces seleccionadas
-         * debe estar presente.
-         */
-        String conceptualFilter =
-                buildConceptualFilter(
-                        terms
-                );
-
-        if (!conceptualFilter.isBlank()) {
-
-            params.add(
-                    "fq",
-                    conceptualFilter
             );
         }
 
@@ -180,48 +161,71 @@ public class LexicalSegmentSearcher
                 params
         );
     }
+    
+    private String buildPropositionQuery(
+            List<String> propositions) {
 
-    /*
-     * =================================================
-     * CONCEPTUAL FILTER
-     * =================================================
-     */
+        if (propositions == null
+                || propositions.isEmpty()) {
 
-    private String buildConceptualFilter(
+            return "";
+        }
+
+        return propositions.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(text -> !text.isBlank())
+                .map(text ->
+                        "legal_proposition:("
+                                + ClientUtils.escapeQueryChars(text)
+                                + ")^4"
+                )
+                .collect(
+                        Collectors.joining(" OR ")
+                );
+    }
+    
+    private String buildConceptualQuery(
             List<Concept> terms) {
 
-        if (terms == null
-                || terms.isEmpty()) {
-
+        if (terms == null || terms.isEmpty()) {
             return "";
         }
 
-        String values =
-                terms.stream()
-                        .filter(Objects::nonNull)
-                        .filter(concept ->
-                                concept.term() != null
-                                        && !concept.term().isBlank()
+        return terms.stream()
+                .filter(Objects::nonNull)
+                .map(Concept::term)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(term -> !term.isBlank())
+                .map(term -> {
+
+                    int depth =
+                            getConceptDepth(
+                                    term
+                            );
+
+                    return "thesaurus_term:\""
+                            + escape(term)
+                            + "\"^"
+                            + depth;
+                })
+                .collect(
+                        Collectors.joining(
+                                " OR "
                         )
-                        .map(concept ->
-                                "\""
-                                        + escape(concept.term())
-                                        + "\""
-                        )
-                        .collect(
-                                Collectors.joining(
-                                        " OR "
-                                )
-                        );
+                );
+    }
+    
+    private int getConceptDepth(
+            String term) {
 
-        if (values.isBlank()) {
-
-            return "";
-        }
-
-        return "thesaurus_term:("
-                + values
-                + ")";
+        return (int) Arrays.stream(
+                        term.split(">")
+                )
+                .map(String::trim)
+                .filter(part -> !part.isBlank())
+                .count();
     }
 
     /*
@@ -331,8 +335,7 @@ public class LexicalSegmentSearcher
                         .toList();
 
         if (lawNumbers.isEmpty()) {
-
-            return query;
+            return escape(query);
         }
 
         String boostedLaws =
@@ -355,9 +358,7 @@ public class LexicalSegmentSearcher
 
         return boostedLaws
                 + " OR "
-                + "\""
-                + escape(query)
-                + "\"";
+                + escape(query);
     }
 
     /*
