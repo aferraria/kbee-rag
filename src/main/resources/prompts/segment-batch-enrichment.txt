@@ -1,0 +1,334 @@
+Recibirás un LOTE de SEGMENTOS JUDICIALES.
+
+Cada segmento contiene:
+
+1. un ID;
+2. un TEXTO JUDICIAL;
+3. una lista de TÉRMINOS candidatos de un tesauro.
+
+Debés procesar TODOS los segmentos del lote.
+
+Para cada segmento debés realizar dos tareas:
+
+A) seleccionar los TÉRMINOS respaldados por el TEXTO JUDICIAL de ese segmento;
+B) generar proposiciones jurídicas únicamente a partir del TEXTO JUDICIAL de ese segmento.
+
+
+==================================================
+PROCESAMIENTO INDEPENDIENTE DE LOS SEGMENTOS
+==================================================
+
+Procesá cada segmento como si fuera una llamada individual e independiente.
+
+Para cada segmento:
+
+* utilizá únicamente su propio TEXTO JUDICIAL y sus propios TÉRMINOS candidatos;
+* no utilices información, términos ni proposiciones de otros segmentos;
+* no repartas ni dedupliques TÉRMINOS entre segmentos;
+* si un TÉRMINO está respaldado por varios segmentos, seleccionalo independientemente en cada uno de ellos;
+* el resultado de cada segmento debe ser el mismo que producirías si ese segmento fuera la única entrada recibida.
+
+La información de un segmento nunca puede utilizarse para completar, justificar o modificar el resultado de otro segmento.
+
+
+==================================================
+CONTEXTO JURISDICCIONAL DEL CORPUS
+==================================================
+
+Todos los textos provienen de fallos de la Provincia de Santa Fe.
+
+Por lo tanto, salvo que el TEXTO JUDICIAL DEL SEGMENTO indique expresamente
+otra jurisdicción, toda mención genérica a instituciones, tribunales,
+autoridades o lugares debe interpretarse como referida a la Provincia
+de Santa Fe.
+
+Ejemplos:
+
+* "esta Corte" o "la Corte" se interpreta como
+  "Corte Suprema de Justicia de la Provincia de Santa Fe";
+
+* "la Provincia" se interpreta como
+  "Provincia de Santa Fe";
+
+* una "Cámara de Apelación", si no se indica otra jurisdicción,
+  corresponde a una Cámara de Apelación de la Provincia de Santa Fe.
+
+Esta regla puede utilizarse únicamente para determinar la jurisdicción
+de una institución o lugar mencionado en EL MISMO segmento.
+
+No puede utilizarse para inferir procedimientos, competencias, normas,
+recursos, cargos, relaciones jerárquicas ni otros conceptos que no
+estén expresados en el TEXTO JUDICIAL DEL SEGMENTO.
+
+
+==================================================
+A) SELECCIÓN DE TÉRMINOS
+==================================================
+
+Para CADA segmento, seleccioná únicamente los TÉRMINOS de SU propia lista
+de candidatos que representen de forma directa e inequívoca conceptos
+jurídicos contenidos en SU TEXTO JUDICIAL.
+
+La lista de candidatos de cada segmento es cerrada.
+
+No inventes, modifiques ni reformules TÉRMINOS.
+
+Evaluá cada TÉRMINO únicamente contra el TEXTO JUDICIAL DEL MISMO SEGMENTO.
+
+No uses conocimiento externo, otros segmentos ni otros candidatos
+para justificar un TÉRMINO.
+
+La semejanza temática, semántica o la coincidencia de palabras no son
+suficientes.
+
+Un TÉRMINO está justificado únicamente cuando el concepto que expresa:
+
+- aparece explícitamente en el TEXTO JUDICIAL; o
+- constituye una reformulación directa e inequívoca de algo expresado
+  en el TEXTO JUDICIAL.
+
+Si para justificar un TÉRMINO es necesario inferir o agregar información
+que el TEXTO JUDICIAL no expresa, no lo selecciones.
+
+
+VOCES JERÁRQUICAS
+
+El carácter ">" separa un TÉRMINO jerárquico en sus componentes.
+
+Ejemplo:
+
+HONORARIOS > REGULACION FIRME
+
+es un único TÉRMINO compuesto por:
+
+HONORARIOS
+REGULACION FIRME
+
+Seleccioná un TÉRMINO jerárquico únicamente si TODOS sus componentes
+están justificados por el TEXTO JUDICIAL.
+
+Cada componente debe estar justificado de manera independiente según
+las reglas anteriores.
+
+Si UN componente no está justificado, no incluyas el TÉRMINO en la respuesta.
+
+Los componentes pueden estar justificados en distintas partes del mismo
+TEXTO JUDICIAL; no necesitan aparecer juntos, consecutivamente ni en la
+misma oración.
+
+Si el primer componente es "DERECHO", ignoralo para esta evaluación.
+
+Conservá siempre el TÉRMINO completo exactamente como aparece en la lista
+de candidatos.
+
+No devuelvas sus componentes por separado.
+
+
+REGLA DE CENTRALIDAD JURÍDICA
+
+No selecciones un TÉRMINO únicamente porque aparezca literalmente en el texto.
+
+Seleccioná prioritariamente los TÉRMINOS que representen la regla,
+institución, relación o consecuencia jurídica desarrollada en el segmento.
+
+No selecciones conceptos que aparezcan sólo como datos instrumentales,
+descriptivos o accesorios.
+
+Si el texto establece una consecuencia jurídica asociada a un concepto
+candidato, ese concepto debe tener prioridad sobre términos que sólo
+describen elementos secundarios del razonamiento.
+
+Ejemplo:
+
+Si el texto establece que una obligación se convierte en deuda de dinero
+cuando adquiere firmeza una regulación de honorarios, debe priorizarse
+
+HONORARIOS > REGULACION FIRME
+
+frente a términos relativos al cargo del juez, la remuneración o sus
+adicionales.
+
+
+==================================================
+B) PROPOSICIONES JURÍDICAS
+==================================================
+
+Para CADA segmento, generá proposiciones jurídicas únicamente a partir
+de SU TEXTO JUDICIAL.
+
+No utilices los TÉRMINOS candidatos para generar, completar o ampliar
+las proposiciones.
+
+No utilices textos ni proposiciones de otros segmentos.
+
+Las proposiciones correspondientes a un segmento deben poder generarse
+de la misma manera aunque:
+
+* los demás segmentos del lote no existieran; y
+* la lista de TÉRMINOS no hubiera sido suministrada.
+
+
+CONTENIDO
+
+Extraé las reglas, criterios, requisitos, condiciones, conclusiones y
+relaciones jurídicas sustantivas expresadas en EL TEXTO JUDICIAL DEL SEGMENTO.
+
+Priorizá las afirmaciones jurídicas adoptadas por el tribunal.
+
+Cada proposición debe expresar una afirmación autónoma, concreta y
+jurídicamente relevante.
+
+Podés reformular una afirmación para hacerla clara y autónoma,
+pero no amplíes ni alteres su contenido.
+
+Conservá la dirección de las relaciones expresadas en el texto.
+
+No intercambies causa, fundamento, objeto, condición o consecuencia.
+
+No agregues hechos, decisiones, requisitos, condiciones, causas,
+fundamentos, consecuencias ni relaciones que no estén expresados
+explícita o inequívocamente en EL TEXTO JUDICIAL DEL SEGMENTO.
+
+No completes sujetos, tribunales, normas, procedimientos, efectos,
+consecuencias ni calificaciones jurídicas que no estén expresados
+en EL TEXTO JUDICIAL DEL SEGMENTO.
+
+Si una afirmación requiere inferencia, información de otro segmento
+o conocimiento externo para formularse, no la generes.
+
+
+RELEVANCIA
+
+Omití información meramente accesoria que no contribuya a representar
+el contenido jurídico sustantivo del TEXTO JUDICIAL DEL SEGMENTO.
+
+Omití hechos, antecedentes procesales y referencias a precedentes cuando
+no sean necesarios para expresar una regla, criterio, requisito,
+condición o conclusión jurídica.
+
+No generes una proposición únicamente para indicar que un precedente
+fue citado, aplicado o considerado análogo.
+
+Si el TEXTO JUDICIAL DEL SEGMENTO reproduce o adopta una regla jurídica
+proveniente de un precedente, extraé la regla jurídica y no la mera
+referencia al precedente.
+
+
+PRECISIÓN Y NO REDUNDANCIA
+
+La no redundancia se aplica únicamente DENTRO DE CADA SEGMENTO.
+
+No intentes eliminar redundancias ENTRE SEGMENTOS.
+
+Cada proposición de un segmento debe representar una idea jurídica diferente.
+
+No generes dentro del mismo segmento varias paráfrasis de la misma regla,
+criterio o conclusión.
+
+Cuando distintas partes DEL MISMO TEXTO JUDICIAL expresen sustancialmente
+la misma regla jurídica, conservala en una sola proposición.
+
+Generá el menor número de proposiciones necesario para representar
+el contenido jurídico sustantivo DE CADA SEGMENTO.
+
+Generá como máximo 5 proposiciones POR SEGMENTO.
+
+Si tenés dudas acerca de si una afirmación está contenida en el
+TEXTO JUDICIAL DEL SEGMENTO, no la agregues.
+
+
+==================================================
+REGLAS ESTRICTAS DEL PROCESAMIENTO POR LOTES
+==================================================
+
+* Procesá todos los IDs recibidos.
+* Cada ID representa una unidad de análisis independiente.
+* No mezcles información entre IDs.
+* No transfieras términos entre IDs.
+* No transfieras proposiciones entre IDs.
+* No uses un segmento para completar otro.
+* No repartas conceptos entre segmentos.
+* No evites seleccionar un término porque ya fue seleccionado para otro ID.
+* Si el mismo término corresponde a varios IDs, incluilo en todos ellos.
+* No uses conocimiento jurídico externo.
+* No agregues información ausente del TEXTO JUDICIAL del segmento evaluado.
+* No inventes TÉRMINOS.
+* No inventes hechos ni soluciones jurídicas.
+* No selecciones TÉRMINOS por mera asociación temática.
+* No selecciones una especialización no expresada.
+* Conservá exactamente el texto de cada TÉRMINO seleccionado.
+* Dentro de cada segmento, la selección de TÉRMINOS y la generación de
+  PROPOSICIONES son tareas independientes.
+* La presencia de otros segmentos en el lote NO debe modificar el resultado
+  que producirías para un segmento procesado individualmente.
+
+
+==================================================
+FORMATO OBLIGATORIO
+==================================================
+
+==================================================
+FORMATO OBLIGATORIO
+==================================================
+
+Respondé por TODOS los segmentos recibidos.
+
+Conservá exactamente el ID proporcionado para cada segmento.
+
+"terminos" es una lista de selección, no una lista de evaluación.
+
+Para cada ID, incluí en "terminos" únicamente los TÉRMINOS seleccionados
+para ESE segmento.
+
+Los TÉRMINOS no seleccionados deben omitirse completamente.
+
+No generes un objeto JSON por cada TÉRMINO candidato.
+
+No incluyas evaluaciones negativas ni descartes de TÉRMINOS.
+
+Respondé única y exclusivamente con un objeto JSON válido que siga
+estrictamente esta estructura:
+
+{
+  "segments": [
+    {
+      "id": 1,
+      "terminos": [
+        "Nombre exacto del TÉRMINO 1",
+        "Nombre exacto del TÉRMINO 2"
+      ],
+      "propositions": [
+        "Proposición jurídica 1",
+        "Proposición jurídica 2"
+      ]
+    },
+    {
+      "id": 2,
+      "terminos": [],
+      "propositions": []
+    }
+  ]
+}
+
+Para cada segmento:
+
+* cada TÉRMINO candidato puede aparecer como máximo una vez en "terminos";
+
+* no repitas un TÉRMINO dentro del mismo segmento;
+
+* no incluyas ningún TÉRMINO que no pertenezca exactamente a la lista
+  de candidatos DE ESE SEGMENTO;
+
+* la cantidad de elementos de "terminos" nunca puede superar la cantidad
+  de TÉRMINOS candidatos recibidos PARA ESE SEGMENTO;
+
+* conservá exactamente el texto original de cada TÉRMINO seleccionado;
+
+* las "propositions" deben derivarse exclusivamente del TEXTO JUDICIAL
+  correspondiente al mismo ID.
+
+La salida debe contener exactamente un resultado por cada ID recibido.
+
+No omitas segmentos aunque no selecciones términos o no generes proposiciones.
+
+No agregues texto antes ni después del JSON.
