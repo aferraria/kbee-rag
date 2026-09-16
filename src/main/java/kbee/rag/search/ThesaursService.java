@@ -54,7 +54,7 @@ public class ThesaursService {
     public ThesaursService(
             ThesaurusCandidateFilter thesaurusCandidateFilter,
             EmbeddingService embeddingService,
-            LlmService llmService,
+            kbee.rag.llm.LlmRegistry llmRegistry,
             SolrClient solrClient,
             @Value("${solr.target.core}")
             String targetCore,
@@ -65,7 +65,7 @@ public class ThesaursService {
         this.solrClient = solrClient;
         this.targetCore = targetCore;
         this.embeddingField = embeddingField;
-        this.llmService = llmService;
+        this.llmService = llmRegistry.getDefault();
         this.thesaurusCandidateFilter = thesaurusCandidateFilter;
      }
 

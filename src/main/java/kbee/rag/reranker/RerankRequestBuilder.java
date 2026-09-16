@@ -25,10 +25,19 @@ public class RerankRequestBuilder {
             String query,
             List<ExpandedSource> sources) {
 
+        return build(null, query, sources);
+    }
+
+    public RerankRequest build(
+            String llmProvider,
+            String query,
+            List<ExpandedSource> sources) {
+
         return new RerankRequest(
-                instructionProvider.get(promptName),
+                instructionProvider.get(llmProvider, promptName),
                 query,
-                sources
+                sources,
+                llmProvider
         );
     }
 }

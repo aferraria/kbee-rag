@@ -34,13 +34,13 @@ public class DefaultLegalTextEnhancer
     private final InstructionProvider instructionProvider;
 
     public DefaultLegalTextEnhancer(
-            LlmService llmService,
+            kbee.rag.llm.LlmRegistry llmRegistry,
             ThesaursService conceptExtractorService,
             ObjectMapper objectMapper,
             InstructionProvider instructionProvider) {
 
         this.llmService =
-                llmService;
+                llmRegistry.getDefault();
 
         this.conceptExtractorService =
                 conceptExtractorService;

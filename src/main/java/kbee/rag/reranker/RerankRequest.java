@@ -7,6 +7,7 @@ import kbee.rag.search.ExpandedSource;
 public record RerankRequest(
         String instructions,
         String question,
-        List<ExpandedSource> candidates
+        List<ExpandedSource> candidates,
+        String llmProvider
 ) {
 }

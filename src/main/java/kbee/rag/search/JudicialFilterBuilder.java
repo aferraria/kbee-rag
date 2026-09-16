@@ -30,16 +30,18 @@ public class JudicialFilterBuilder
         }
 
         String fromDate =
-                getValue(
-                        parameters,
-                        FROM_DATE
-                );
+                normalizeDate(
+                        getValue(
+                                parameters,
+                                FROM_DATE
+                        ));
 
         String toDate =
-                getValue(
-                        parameters,
-                        TO_DATE
-                );
+                normalizeDate(
+                        getValue(
+                                parameters,
+                                TO_DATE
+                        ));
 
         if (fromDate != null
                 || toDate != null) {
@@ -77,5 +79,43 @@ public class JudicialFilterBuilder
         return text.isBlank()
                 ? null
                 : text;
+    }
+
+    /**
+     * Normalizes an ISO-8601 date/date-time string to the strict UTC instant
+     * format required by Solr (e.g. {@code 2025-09-16T03:00:00Z}). Accepts
+     * instants ({@code ...Z}), offset date-times ({@code 2025-09-16T00:00-03:00}),
+     * local date-times and plain dates ({@code 2025-09-16}). Returns the input
+     * unchanged if it cannot be parsed.
+     */
+    private String normalizeDate(String text) {
+
+        if (text == null) {
+            return null;
+        }
+
+        try {
+            return java.time.Instant.parse(text).toString();
+        } catch (java.time.format.DateTimeParseException ignore) {
+        }
+
+        try {
+            return java.time.OffsetDateTime.parse(text).toInstant().toString();
+        } catch (java.time.format.DateTimeParseException ignore) {
+        }
+
+        try {
+            return java.time.LocalDateTime.parse(text)
+                    .atOffset(java.time.ZoneOffset.UTC).toInstant().toString();
+        } catch (java.time.format.DateTimeParseException ignore) {
+        }
+
+        try {
+            return java.time.LocalDate.parse(text)
+                    .atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toString();
+        } catch (java.time.format.DateTimeParseException ignore) {
+        }
+
+        return text;
     }
 }

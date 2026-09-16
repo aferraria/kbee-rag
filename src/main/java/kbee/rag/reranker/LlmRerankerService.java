@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import kbee.rag.llm.LlmRegistry;
 import kbee.rag.llm.LlmRequest;
 import kbee.rag.llm.LlmService;
 import kbee.rag.search.ExpandedSource;
@@ -24,15 +25,15 @@ import reactor.core.publisher.Mono;
 public class LlmRerankerService
         implements RerankerService {
 
-    private final LlmService llmService;
+    private final LlmRegistry llmRegistry;
     private final ObjectMapper objectMapper;
 
     public LlmRerankerService(
-            LlmService llmService,
+            LlmRegistry llmRegistry,
             ObjectMapper objectMapper) {
 
-        this.llmService =
-                llmService;
+        this.llmRegistry =
+                llmRegistry;
 
         this.objectMapper =
                 objectMapper;
@@ -71,6 +72,11 @@ public class LlmRerankerService
                         request.instructions(),
                         input,
                         null
+                );
+
+        LlmService llmService =
+                llmRegistry.get(
+                        request.llmProvider()
                 );
 
         return llmService.generate(

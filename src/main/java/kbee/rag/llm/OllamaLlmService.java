@@ -21,12 +21,15 @@ import reactor.core.scheduler.Schedulers;
 
 @Service
 @ConditionalOnProperty(
-        prefix = "llm",
-        name = "provider",
-        havingValue = "ollama"
+        prefix = "llm.ollama",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true
 )
 public class OllamaLlmService
         implements LlmService {
+
+    public static final String PROVIDER_ID = "ollama";
 
     private final HttpClient httpClient;
 
@@ -79,6 +82,11 @@ public class OllamaLlmService
                         + this.model
                         + " ====="
         );
+    }
+
+    @Override
+    public String providerId() {
+        return PROVIDER_ID;
     }
 
     @Override

@@ -16,7 +16,8 @@ public class LlmRerankRequestBuilder {
         return new RerankRequest(
                 buildInstructions(),
                 query,
-                sources
+                sources,
+                null
         );
     }
 

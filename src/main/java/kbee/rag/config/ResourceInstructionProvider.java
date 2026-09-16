@@ -24,6 +24,39 @@ public class ResourceInstructionProvider
         String path =
                 "classpath:prompts/" + name + ".txt";
 
+        return load(path);
+    }
+
+    @Override
+    public String get(String provider, String name) {
+
+        if (provider == null || provider.isBlank()) {
+            return get(name);
+        }
+
+        String path =
+                "classpath:prompts/"
+                        + provider
+                        + "/"
+                        + name
+                        + ".txt";
+
+        Resource resource =
+                resourceLoader.getResource(path);
+
+        if (!resource.exists()) {
+            /*
+             * Fall back to the shared prompt when the
+             * provider has no specific version.
+             */
+            return get(name);
+        }
+
+        return load(path);
+    }
+
+    private String load(String path) {
+
         try {
             Resource resource =
                     resourceLoader.getResource(path);

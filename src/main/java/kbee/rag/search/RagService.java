@@ -10,9 +10,11 @@ import org.springframework.stereotype.Service;
 
 import kbee.rag.audit.AuditContext;
 import kbee.rag.audit.AuditRecord;
+import kbee.rag.audit.Logger;
 import kbee.rag.audit.ReactorAuditPublisher;
 import kbee.rag.config.InstructionProvider;
 import kbee.rag.document.DocumentDao;
+import kbee.rag.llm.LlmRegistry;
 import kbee.rag.llm.LlmRequest;
 import kbee.rag.llm.LlmRequestBuilder;
 import kbee.rag.llm.LlmService;
@@ -34,19 +36,23 @@ public class RagService {
 
     private final RerankerService rerankerService;
 
-    private final LlmService llmService;
+    private final LlmRegistry llmRegistry;
     
     private final FilterQueryBuilder filterBuilder;
     
     private final InstructionProvider instructionProvider;
 
+    static private Logger logger = Logger.getLogger(RagService.class.getName());
+
+    
+    
     public RagService(
             SegmentSearchService segmentSearchService,
             DocumentDao documentDao,
             RerankRequestBuilder rerankRequestBuilder,
             RerankerService rerankerService,
             LlmRequestBuilder llmRequestBuilder,
-            LlmService llmService,
+            LlmRegistry llmRegistry,
             FilterQueryBuilder filterBuilder,
             InstructionProvider instructionProvider) {
 
@@ -64,8 +70,8 @@ public class RagService {
         
         this.llmRequestBuilder = llmRequestBuilder;
 
-        this.llmService =
-                llmService;
+        this.llmRegistry =
+                llmRegistry;
         
         this.filterBuilder = filterBuilder;
         
@@ -79,9 +85,14 @@ public class RagService {
         String question =
                 request.question();
 
+        String llmProvider =
+                llmRegistry.resolveProviderId(
+                        request.llm()
+                );
+
         int topK =
                 request.topK() == null
-                        ? 5
+                        ? 10
                         : request.topK();
 
         return segmentSearchService.search(
@@ -100,13 +111,16 @@ public class RagService {
                 rerank(
                         question,
                         sources,
-                        topK
+                        topK,
+                        llmProvider
                 )
         ) 
         .flatMap(rerankedSources ->
                 generateResponse(
                         question,
-                        rerankedSources
+                        rerankedSources,
+                        llmProvider,
+                        request.reasoningEffortOrDefault()
                 )
         );
     }
@@ -132,16 +146,9 @@ public class RagService {
                 	                record.finishedAt()
                 	        ).toMillis();
 
-                	System.out.println(
-                	        "===== AUDIT RECORD ====="
-                	);
-
-                	System.out.println(record);
-
-                	System.out.printf(
-                	        "===== TOTAL: %.2f s =====%n",
-                	        totalMillis / 1000.0
-                	);
+                	logger.debug("===== AUDIT RECORD =====");
+                	logger.debug(record);
+                	logger.debug("===== TOTAL: %.2f s =====%n" +  totalMillis / 1000.0);
 
                     return Mono.just(
                             sources
@@ -161,6 +168,11 @@ public class RagService {
 
         String question =
                 request.question();
+
+        String llmProvider =
+                llmRegistry.resolveProviderId(
+                        request.llm()
+                );
 
         int topK =
                 request.topK() == null
@@ -184,7 +196,8 @@ public class RagService {
                         rerank(
                                 question,
                                 sources,
-                                topK
+                                topK,
+                                llmProvider
                         )
                 )
                 .flatMap(rerankedSources ->
@@ -222,6 +235,21 @@ public class RagService {
             String documentId,
             String question) {
 
+        return analyzeDocument(
+                documentId,
+                question,
+                null
+        );
+    }
+
+    public Mono<DocumentAnalysisResponse> analyzeDocument(
+            String documentId,
+            String question,
+            String llm) {
+
+        String llmProvider =
+                llmRegistry.resolveProviderId(llm);
+
         return documentDao
                 .getDocument(
                         documentId
@@ -251,6 +279,7 @@ public class RagService {
 
                     String instructions =
                             instructionProvider.get(
+                                    llmProvider,
                                     "document-analysis"
                             );
 
@@ -261,7 +290,8 @@ public class RagService {
                                     null
                             );
 
-                    return llmService
+                    return llmRegistry
+                            .get(llmProvider)
                             .generate(
                                     request
                             )
@@ -278,7 +308,8 @@ public class RagService {
     private Mono<List<ExpandedSource>> rerank(
             String question,
             List<ExpandedSource> sources,
-            int topK) {
+            int topK,
+            String llmProvider) {
 
         if (sources == null
                 || sources.isEmpty()) {
@@ -316,6 +347,7 @@ public class RagService {
 
         RerankRequest request =
                 rerankRequestBuilder.build(
+                        llmProvider,
                         question,
                         sources
                 );
@@ -328,7 +360,9 @@ public class RagService {
     
     private Mono<RagResponse> generateResponse(
             String question,
-            List<ExpandedSource> sources) {
+            List<ExpandedSource> sources,
+            String llmProvider,
+            String reasoningEffort) {
 
         if (sources == null
                 || sources.isEmpty()) {
@@ -348,10 +382,14 @@ public class RagService {
                         sources
                 );
 
+        LlmService llmService =
+                llmRegistry.get(llmProvider);
+
         return llmService.generate(new LlmRequest(
         		request.instructions(),
                 request.input(),
-                null))
+                null,
+                reasoningEffort))
         
         .map(answer ->
                 new RagResponse(
