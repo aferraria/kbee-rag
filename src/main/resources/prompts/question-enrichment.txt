@@ -3,134 +3,114 @@ TAREA
 Recibirás:
 
 1. una CONSULTA;
-2. una lista cerrada de TÉRMINOS candidatos de un tesauro jurídico.
+2. una lista de TÉRMINOS candidatos de un tesauro jurídico.
 
 Debés realizar dos tareas independientes:
 
 A) seleccionar los TÉRMINOS respaldados por la CONSULTA;
-B) generar PROPOSICIONES JURÍDICAS a partir de la CONSULTA.
+B) generar proposiciones jurídicas que representen la CONSULTA.
 
+
+
+==================================================
+CONTEXTO JURISDICCIONAL DEL CORPUS
+==================================================
+
+Todos los textos provienen de fallos de la Provincia de Santa Fe.
+
+Por lo tanto, salvo que el consulta indique expresamente otra
+jurisdicción, toda mención genérica a instituciones, tribunales,
+autoridades o lugares debe interpretarse como referida a la Provincia
+de Santa Fe.
+
+Ejemplos:
+
+- "esta Corte" o "la Corte" se interpreta como
+  "Corte Suprema de Justicia de la Provincia de Santa Fe";
+
+- "la Provincia" se interpreta como
+  "Provincia de Santa Fe";
+
+- una "Cámara de Apelación", si no se indica otra jurisdicción,
+  corresponde a una Cámara de Apelación de la Provincia de Santa Fe.
+
+Esta regla puede utilizarse únicamente para determinar la jurisdicción
+de una institución o lugar mencionado en el texto.
+
+No puede utilizarse para inferir procedimientos, competencias, normas,
+recursos, cargos, relaciones jerárquicas ni otros conceptos que no
+estén expresados en la consulta.
 
 ==================================================
 A) SELECCIÓN DE TÉRMINOS
 ==================================================
 
-seleccioná únicamente los TÉRMINOS de la lista
-de candidatos que representen de forma directa e inequívoca conceptos
-jurídicos contenidos en LA CONSULTA
+Por cada término recibido, responde esta pregunta:
 
-La lista de candidatos de cada segmento es cerrada.
+¿El concepto expresado por el término está representado
+de forma directa e inequívoca en la CONSULTA, sin necesidad
+de realizar ningún tipo de suposición?
 
-No inventes, modifiques ni reformules TÉRMINOS.
+Si la respuesta es SÍ, incluye el término como seleccionado.
 
-No uses conocimiento externo, otros segmentos ni otros candidatos
-para justificar un TÉRMINO.
+Si la respuesta es NO, no lo selecciones.
 
-La semejanza temática, semántica o la coincidencia de palabras no son
-suficientes.
-
-Un TÉRMINO está justificado únicamente cuando el concepto que expresa:
-
-- aparece explícitamente en la CONSULTA o
-- constituye una reformulación directa e inequívoca de algo expresado
-  en la CONSULTAL.
-
-Si para justificar un TÉRMINO es necesario inferir o agregar información
-que la CONSULTA no expresa, no lo selecciones.
-
-
-VOCES JERÁRQUICAS
-
-El carácter ">" separa un TÉRMINO jerárquico en sus componentes.
-
-Ejemplo:
-
-HONORARIOS > REGULACION FIRME
-
-es un único TÉRMINO compuesto por:
-
-HONORARIOS
-REGULACION FIRME
-
-Seleccioná un TÉRMINO jerárquico únicamente si TODOS sus componentes
-están justificados por la consulta
-
-Cada componente debe estar justificado de manera independiente según
-las reglas anteriores.
-
-Si UN componente no está justificado, no incluyas el TÉRMINO en la respuesta.
-
-Los componentes pueden estar justificados en distintas partes de la misma
-CONSULTAL; no necesitan aparecer juntos, consecutivamente ni en la
-misma oración.
-
-Si el primer componente es "DERECHO", ignoralo para esta evaluación.
-
-Conservá siempre el TÉRMINO completo exactamente como aparece en la lista
-de candidatos.
-
-No devuelvas sus componentes por separado.
-
-
-REGLA DE CENTRALIDAD JURÍDICA
-
-No selecciones un TÉRMINO únicamente porque aparezca literalmente en el texto.
-
-Seleccioná prioritariamente los TÉRMINOS que representen la regla,
-institución, relación o consecuencia jurídica desarrollada en el segmento.
-
-No selecciones conceptos que aparezcan sólo como datos instrumentales,
-descriptivos o accesorios.
-
-Si el texto establece una consecuencia jurídica asociada a un concepto
-candidato, ese concepto debe tener prioridad sobre términos que sólo
-describen elementos secundarios del razonamiento.
-
-Ejemplo:
-
-Si el texto establece que una obligación se convierte en deuda de dinero
-cuando adquiere firmeza una regulación de honorarios, debe priorizarse
-
-HONORARIOS > REGULACION FIRME
-
-frente a términos relativos al cargo del juez, la remuneración o sus
-adicionales.
 
 ==================================================
 B) PROPOSICIONES JURÍDICAS
 ==================================================
+ 
+Generá proposiciones jurídicas únicamente a partir de la CONSULTA.
 
-Generá, únicamente a partir de la CONSULTA, las cuestiones jurídicas que el usuario busca.
+No utilices los TÉRMINOS candidatos para generar, completar o ampliar
+las proposiciones.
 
-Expresalas como formulaciones nominales y neutrales, no como respuestas o conclusiones.
+Las proposiciones deben poder generarse de la misma manera aunque la
+lista de TÉRMINOS no hubiera sido suministrada.
 
-Eliminá únicamente expresiones de búsqueda como "precedente sobre",
-"jurisprudencia sobre" o equivalentes.
 
-No agregues información ni calificaciones jurídicas ausentes de la CONSULTA.
+CONTENIDO
 
-No elimines información sustantiva presente en la CONSULTA que permita
-identificar o delimitar la cuestión jurídica buscada.
+Representá mediante proposiciones jurídicas el objeto jurídico buscado
+por el usuario.
 
-Conservá literalmente los identificadores específicos presentes en la CONSULTA,
-incluyendo, entre otros:
+Conservá estrictamente el contenido y alcance de la CONSULTA.
 
-- números de leyes;
-- números de artículos;
-- decretos;
-- resoluciones;
-- acordadas;
-- números de expediente;
-- nombres propios de normas;
-- nombres de precedentes.
+Una consulta puede preguntar por una regla, requisito, condición,
+criterio, consecuencia o solución sin afirmar cuál es esa regla,
+requisito, condición, criterio, consecuencia o solución.
 
-Estos identificadores forman parte de la cuestión jurídica y no deben
-generalizarse, resumirse ni eliminarse.
+En esos casos, no completes la información buscada.
 
-No uses los TÉRMINOS candidatos.
+Podés reformular la CONSULTA para hacer explícito su objeto jurídico,
+pero no respondas la consulta ni anticipes la solución jurídica buscada.
 
-Generá una sola proposición, salvo que la CONSULTA contenga claramente más
-de una cuestión jurídica independiente.
+No agregues hechos, decisiones, requisitos, condiciones, causas,
+fundamentos, consecuencias, procedimientos ni relaciones que no estén
+expresados explícita o inequívocamente en la CONSULTA.
+
+No completes sujetos, tribunales, normas, procedimientos, efectos,
+consecuencias ni calificaciones jurídicas que no estén expresados
+en la CONSULTA.
+
+Si una afirmación requiere inferencia o conocimiento externo para
+formularse, no la generes.
+
+
+PRECISIÓN Y NO REDUNDANCIA
+
+Cada proposición debe representar una idea jurídica diferente.
+
+No generes varias paráfrasis de la misma consulta.
+
+Generá el menor número de proposiciones necesario para representar
+el contenido jurídico sustantivo de la CONSULTA.
+
+Generá como máximo 5 proposiciones.
+
+Si tenés dudas acerca de si una afirmación está contenida en la CONSULTA,
+no la agregues.
+
 
 ==================================================
 REGLAS ESTRICTAS
@@ -138,38 +118,49 @@ REGLAS ESTRICTAS
 
 - No uses conocimiento jurídico externo.
 - No agregues información ausente de la CONSULTA.
-- No elimines información jurídicamente relevante presente en la CONSULTA.
 - No inventes TÉRMINOS.
 - No inventes hechos ni soluciones jurídicas.
 - No selecciones TÉRMINOS por mera asociación temática.
 - No selecciones una especialización no expresada.
 - Conservá exactamente el texto de cada TÉRMINO seleccionado.
-- La selección de TÉRMINOS y la generación de PROPOSICIONES son tareas independientes.
+- La selección de TÉRMINOS y la generación de PROPOSICIONES son
+  tareas independientes.
+
 
 ==================================================
 FORMATO OBLIGATORIO
 ==================================================
 
-Respondé únicamente con JSON válido con esta estructura:
+"terminos" es una lista de selección, no una lista de evaluación.
 
-{
-  "terminos": [
-    "TERMINO 1",
-    "TERMINO 2"
-  ],
-  "propositions": [
-    "Proposición 1",
-    "Proposición 2"
-  ]
-}
-
-"terminos" debe contener exclusivamente los TÉRMINOS seleccionados.
+Incluí en "terminos" únicamente los TÉRMINOS seleccionados.
 
 Los TÉRMINOS no seleccionados deben omitirse completamente.
 
-"propositions" debe contener exclusivamente proposiciones derivadas
-de la CONSULTA.
 
-No expliques ni justifiques las decisiones.
+
+Respondé única y exclusivamente con un objeto JSON válido que siga
+estrictamente esta estructura:
+
+{
+  "terminos": [
+    "Nombre exacto del TÉRMINO 1",
+    "Nombre exacto del TÉRMINO 2"
+  ],
+  "propositions": [
+    "Proposición jurídica 1",
+    "Proposición jurídica 2"
+  ]
+}
+
+Cada TÉRMINO candidato puede aparecer como máximo una vez en "terminos".
+
+No repitas un TÉRMINO.
+
+No incluyas ningún TÉRMINO que no pertenezca exactamente a la lista
+de candidatos recibidos.
+
+La cantidad de elementos de "terminos" nunca puede superar la cantidad
+de TÉRMINOS candidatos recibidos.
 
 No agregues texto antes ni después del JSON.

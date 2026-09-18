@@ -1,9 +1,13 @@
 package kbee.rag.search;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -116,6 +120,10 @@ public class CompositeSegmentSearcher
      * MERGE
      * =================================================
      */
+    
+    private static final int GUARANTEED_PER_CHANNEL = 5;
+
+
 
     private List<SegmentSearchResult> merge(
             List<SegmentSearchResult> vectorResults,
@@ -136,20 +144,85 @@ public class CompositeSegmentSearcher
                 LEXICAL_WEIGHT
         );
 
-        return fused.values()
-                .stream()
-                .sorted(
-                        Comparator.comparingDouble(
-                                FusedResult::score
+        List<SegmentSearchResult> rrf =
+                fused.values()
+                        .stream()
+                        .sorted(
+                                Comparator.comparingDouble(
+                                        FusedResult::score
+                                ).reversed()
                         )
-                        .reversed()
-                )
-                .map(
-                        this::toSegmentSearchResult
-                )
-                .toList();
-    }
+                        .map(this::toSegmentSearchResult)
+                        .toList();
 
+        /*
+         * Mapa de resultados con el score RRF.
+         *
+         * Es importante usar estos objetos también
+         * para los resultados garantizados.
+         */
+        Map<String, SegmentSearchResult> rrfById =
+                rrf.stream()
+                        .collect(
+                                Collectors.toMap(
+                                        SegmentSearchResult::id,
+                                        Function.identity(),
+                                        (a, b) -> a,
+                                        LinkedHashMap::new
+                                )
+                        );
+
+        Map<String, SegmentSearchResult> result =
+                new LinkedHashMap<>();
+
+        /*
+         * Garantizamos los mejores resultados lexicales,
+         * pero conservando SIEMPRE el score RRF.
+         */
+        lexicalResults.stream()
+                .limit(GUARANTEED_PER_CHANNEL)
+                .map(r ->
+                        rrfById.get(r.id())
+                )
+                .filter(Objects::nonNull)
+                .forEach(r ->
+                        result.putIfAbsent(
+                                r.id(),
+                                r
+                        )
+                );
+
+        /*
+         * Garantizamos los mejores resultados vectoriales,
+         * también con su score RRF.
+         */
+        vectorResults.stream()
+                .limit(GUARANTEED_PER_CHANNEL)
+                .map(r ->
+                        rrfById.get(r.id())
+                )
+                .filter(Objects::nonNull)
+                .forEach(r ->
+                        result.putIfAbsent(
+                                r.id(),
+                                r
+                        )
+                );
+
+        /*
+         * Completamos con el ranking RRF.
+         */
+        rrf.forEach(r ->
+                result.putIfAbsent(
+                        r.id(),
+                        r
+                )
+        );
+
+        return new ArrayList<>(
+                result.values()
+        );
+    }
     /*
      * =================================================
      * ADD RANKING

@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -19,11 +20,6 @@ import kbee.rag.search.SegmentSearchResult;
 import reactor.core.publisher.Mono;
 
 @Service
-@ConditionalOnProperty(
-        prefix = "reranker",
-        name = "provider",
-        havingValue = "qwen-llm"
-)
 public class LlmRerankerService
         implements RerankerService {
 
@@ -67,7 +63,7 @@ public class LlmRerankerService
                 new LlmRequest(
                         request.instructions(),
                         input,
-                        null
+                        buildRerankFormat(candidates.size())
                 );
 
         return llmService.generate(
@@ -99,6 +95,61 @@ public class LlmRerankerService
 
             error.printStackTrace();
 
+        });
+    }
+    
+    @Override
+    public Mono<List<ExpandedSource>> rerankFinal(
+            RerankRequest request,
+            int topK) {
+
+        List<ExpandedSource> candidates =
+                request.candidates();
+
+        String input =
+                buildInput(
+                        request.question(),
+                        candidates
+                );
+
+        System.out.println(
+                "===== INPUT FINAL RERANK ====="
+        );
+
+        System.out.println(input);
+
+        LlmRequest llmRequest =
+                new LlmRequest(
+                        request.instructions(),
+                        input,
+                        buildFinalRerankFormat(
+                                candidates.size()
+                        )
+                );
+
+        return llmService.generate(
+                llmRequest
+        )
+        .doOnNext(response -> {
+            System.out.println(
+                    "===== RESPONSE FINAL RERANK ====="
+            );
+
+            System.out.println(response);
+        })
+        .map(response ->
+                parseFinalRanking(
+                        response,
+                        candidates,
+                        topK
+                )
+        )
+        .doOnError(error -> {
+            System.err.println(
+                    "===== ERROR FINAL RERANK ====="
+            );
+
+            error.printStackTrace();
         });
     }
     
@@ -220,48 +271,198 @@ public class LlmRerankerService
         }
     }
     
-    private List<ExpandedSource> parseRanking2(
+    public record FinalRankingResponse(
+            List<FinalRankingResult> ranking
+    ) {
+    }
+    
+    public record FinalRankingResult(
+            int index
+    ) {
+    }
+    private List<ExpandedSource> parseFinalRanking(
             String response,
             List<ExpandedSource> candidates,
             int topK) {
 
         try {
 
-            RankingResponse ranking =
+            FinalRankingResponse ranking =
                     objectMapper.readValue(
                             response,
-                            RankingResponse.class
+                            FinalRankingResponse.class
                     );
 
             return ranking.ranking()
                     .stream()
+
+                    /*
+                     * Validamos índice.
+                     */
                     .filter(result ->
                             result.index() >= 0
                                     && result.index()
                                             < candidates.size()
                     )
+
+                    /*
+                     * Evitamos índices repetidos.
+                     *
+                     * El orden del array devuelto por
+                     * el LLM ES el ranking final.
+                     */
+                    .distinct()
+
+                    /*
+                     * TopK definitivo.
+                     */
                     .limit(topK)
+
+                    /*
+                     * El índice corresponde a la posición
+                     * dentro de candidates.
+                     */
                     .map(result ->
-                            withRerankScore(
-                                    candidates.get(
-                                            result.index()
-                                    ),
-                                    result.score()
+                            candidates.get(
+                                    result.index()
                             )
                     )
+
                     .toList();
 
         } catch (Exception e) {
 
             throw new IllegalStateException(
-                    "Respuesta inválida del LLM reranker: "
+                    "Respuesta inválida del LLM final reranker: "
                             + response,
                     e
             );
         }
     }
+    private Map<String, Object> buildFinalRerankFormat(
+            int candidateCount) {
+
+        int topK = Math.min(
+                15,
+                candidateCount
+        );
+
+        return Map.of(
+                "type", "object",
+
+                "properties", Map.of(
+                        "ranking", Map.of(
+                                "type", "array",
+                                "minItems", topK,
+                                "maxItems", topK,
+
+                                "items", Map.of(
+                                        "type", "object",
+
+                                        "properties", Map.of(
+                                                "index", Map.of(
+                                                        "type", "integer",
+                                                        "minimum", 0,
+                                                        "maximum", candidateCount - 1
+                                                )
+                                        ),
+
+                                        "required", List.of(
+                                                "index"
+                                        ),
+
+                                        "additionalProperties", false
+                                )
+                        )
+                ),
+
+                "required", List.of(
+                        "ranking"
+                ),
+
+                "additionalProperties", false
+        );
+    }
     
 
+    
+    private Map<String, Object> buildRerankFormat2(
+            int candidateCount) {
+
+        return Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "ranking", Map.of(
+                                "type", "array",
+                                "minItems", candidateCount,
+                                "maxItems", candidateCount,
+                                "items", Map.of(
+                                        "type", "object",
+                                        "properties", Map.of(
+                                                "index", Map.of(
+                                                        "type", "integer",
+                                                        "minimum", 0,
+                                                        "maximum", candidateCount - 1
+                                                )
+                                        ),
+                                        "required", List.of(
+                                                "index"
+                                        ),
+                                        "additionalProperties", false
+                                )
+                        )
+                ),
+                "required", List.of(
+                        "ranking"
+                ),
+                "additionalProperties", false
+        );
+    }
+    
+    private Map<String, Object> buildRerankFormat(
+            int candidateCount) {
+
+        return Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "ranking", Map.of(
+                                "type", "array",
+                                "minItems", candidateCount,
+                                "maxItems", candidateCount,
+                                "items", Map.of(
+                                        "type", "object",
+                                        "properties", Map.of(
+                                                "index", Map.of(
+                                                        "type", "integer",
+                                                        "minimum", 0,
+                                                        "maximum", candidateCount - 1
+                                                ),
+                                                "score", Map.of(
+                                                        "type", "number",
+                                                        "enum", List.of(
+                                                                0.0,
+                                                                1.0
+                                                        )
+                                                )
+                                        ),
+                                        "required", List.of(
+                                                "index",
+                                                "score"
+                                        ),
+                                        "additionalProperties", false
+                                )
+                        )
+                ),
+                "required", List.of(
+                        "ranking"
+                ),
+                "additionalProperties", false
+        );
+    }
+
+    
+    
+ 
     private String buildRerankerText(
             ExpandedSource source) {
 

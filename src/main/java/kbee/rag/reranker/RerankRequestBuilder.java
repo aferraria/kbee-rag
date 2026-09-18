@@ -20,6 +20,10 @@ public class RerankRequestBuilder {
             InstructionProvider instructionProvider) {
         this.instructionProvider = instructionProvider;
     }
+    
+
+    @Value("${rag.prompts.rerank-final}")
+    private String finalRerankPromptName;
 
     public RerankRequest build(
             String query,
@@ -27,6 +31,19 @@ public class RerankRequestBuilder {
 
         return new RerankRequest(
                 instructionProvider.get(promptName),
+                query,
+                sources
+        );
+    }
+    
+    public RerankRequest buildFinal(
+            String query,
+            List<ExpandedSource> sources) {
+
+        return new RerankRequest(
+                instructionProvider.get(
+                        finalRerankPromptName
+                ),
                 query,
                 sources
         );

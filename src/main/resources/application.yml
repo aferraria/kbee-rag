@@ -1,6 +1,9 @@
 server:
   port: 8080
 
+logging:
+  level:
+    kbee.rag.search.ThesaursService: DEBUG
   
 spring:
   mvc:
@@ -18,6 +21,7 @@ solr:
 rag:
   prompts:
     rerank: rerank-qwen14
+    rerank-final: rerank-final
     answer: rag-answer
     thesaurus: thesaurus
     propositions: legal
@@ -93,7 +97,7 @@ llm-test:
   enabled: false
   
 reranker:
-   provider: qwen-llm
+   provider: local-qwen
 
    enabled: true
    base-url: http://localhost:8091

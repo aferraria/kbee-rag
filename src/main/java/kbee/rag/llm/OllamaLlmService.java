@@ -113,16 +113,11 @@ public class OllamaLlmService
                             ),
                             false,
                             false,
-                            request.format(),
-//                            new Options(
-//                                    0.0,
-//                                    32768,
-//                                    48768
-//                            )
+                            request.format(), 
                             new Options(
                                     0.0,
                                     48000,
-                                    4096
+                                    8192
                             )
                     );
 

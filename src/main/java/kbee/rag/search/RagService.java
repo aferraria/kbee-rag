@@ -2,6 +2,7 @@ package kbee.rag.search;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,6 +21,8 @@ import kbee.rag.document.DocumentDao;
 import kbee.rag.llm.LlmRequest;
 import kbee.rag.llm.LlmRequestBuilder;
 import kbee.rag.llm.LlmService;
+import kbee.rag.reranker.LlmRerankerService;
+import kbee.rag.reranker.LocalQwenRerankerService;
 import kbee.rag.reranker.RerankRequest;
 import kbee.rag.reranker.RerankRequestBuilder;
 import kbee.rag.reranker.RerankResult;
@@ -38,9 +41,11 @@ public class RagService {
     
     private final LlmRequestBuilder llmRequestBuilder;
 
-    private final RerankerService rerankerService;
+    private final LocalQwenRerankerService rerankerService;
 
     private final LlmService llmService;
+    
+    private final LlmRerankerService llmRerankerService; // LLM final
     
     private final FilterQueryBuilder filterBuilder;
     
@@ -50,9 +55,10 @@ public class RagService {
             SegmentSearchService segmentSearchService,
             DocumentDao documentDao,
             RerankRequestBuilder rerankRequestBuilder,
-            RerankerService rerankerService,
+            LocalQwenRerankerService rerankerService,
             LlmRequestBuilder llmRequestBuilder,
             LlmService llmService,
+            LlmRerankerService llmRerankerService,
             FilterQueryBuilder filterBuilder,
             InstructionProvider instructionProvider) {
 
@@ -67,6 +73,8 @@ public class RagService {
 
         this.rerankerService =
                 rerankerService;
+        
+        this.llmRerankerService = llmRerankerService;
         
         this.llmRequestBuilder = llmRequestBuilder;
 
@@ -281,7 +289,7 @@ public class RagService {
                 });
     }
     
-    private static final int RERANK_BATCH_SIZE = 6;
+    private static final int RERANK_BATCH_SIZE = 3;
     
 
     private Mono<List<ExpandedSource>> rerank(
@@ -319,8 +327,14 @@ public class RagService {
         );
         System.out.println();
 
+        int rerankSize =
+                Math.min(
+                        topK,
+                        sources.size()
+                );
+
         List<IndexedSource> indexedSources =
-                IntStream.range(0, sources.size())
+                IntStream.range(0, rerankSize)
                         .mapToObj(index ->
                                 new IndexedSource(
                                         index,
@@ -328,7 +342,7 @@ public class RagService {
                                 )
                         )
                         .toList();
-
+        
         return Flux.fromIterable(indexedSources)
                 .buffer(RERANK_BATCH_SIZE)
                 .concatMap(batch ->
@@ -341,18 +355,58 @@ public class RagService {
                 .collectList()
                 .flatMap(finalists -> {
 
-                    List<ExpandedSource> finalSources =
-                            finalists.stream()
-                                    .map(IndexedSource::source)
-                                    .toList();
+                	List<ExpandedSource> finalSources =
+                	        finalists.stream()
+                	                .map(IndexedSource::source)
+                	                .sorted(
+                	                        Comparator.comparingDouble(
+                	                                (ExpandedSource source) ->
+                	                                        source.selected().score()
+                	                        ).reversed()
+                	                )
+                	                .limit(25)
+                	                .collect(
+                	                        Collectors.toCollection(
+                	                                ArrayList::new
+                	                        )
+                	                );
+                	
 
+							System.out.println();
+							System.out.println(
+							        "===== QWEN FINALISTS SORTED ====="
+							);
+							
+							int position = 1;
+							
+							for (ExpandedSource source : finalSources) {
+							
+							    SegmentSearchResult selected =
+							            source.selected();
+							
+							    System.out.printf(
+							            "%2d | score=%.2f | %s | %s%n",
+							            position++,
+							            selected.score(),
+							            selected.documentId(),
+							            selected.id()
+							    );
+							}
+							
+							System.out.println(
+							        "================================="
+							);
+
+                	//Collections.shuffle(finalSources);
+
+                    
                     RerankRequest finalRequest =
-                            rerankRequestBuilder.build(
+                            rerankRequestBuilder.buildFinal(
                                     question,
                                     finalSources
                             );
 
-                    return rerankerService.rerank(
+                    return llmRerankerService.rerankFinal(
                             finalRequest,
                             Math.min(
                                     topK,
@@ -364,6 +418,9 @@ public class RagService {
     
 
     private static final int RERANK_BATCH_DROP_LAST = 2;
+
+    private static final double RERANK_BATCH_MIN_SCORE = 0.40;
+
 
     private Mono<List<IndexedSource>> rerankBatch(
             String question,
@@ -407,10 +464,6 @@ public class RagService {
                     "===== RERANK BATCH FINALISTS ====="
             );
 
-            /*
-             * El filtro por score puede eliminar
-             * todos los candidatos del batch.
-             */
             if (reranked == null
                     || reranked.isEmpty()) {
 
@@ -430,19 +483,25 @@ public class RagService {
             List<IndexedSource> finalists =
                     new ArrayList<>();
 
-            int keep =
-                    Math.max(
-                            0,
-                            reranked.size()
-                                    - RERANK_BATCH_DROP_LAST
-                    );
+            for (ExpandedSource source : reranked) {
 
-            for (int rank = 0;
-                    rank < keep;
-                    rank++) {
+                SegmentSearchResult selected =
+                        source.selected();
 
-                ExpandedSource source =
-                        reranked.get(rank);
+                double score =
+                        selected.score();
+
+//                if (score < RERANK_BATCH_MIN_SCORE) {
+//
+//                    System.out.printf(
+//                            "DROP | score=%.2f | %s | %s%n",
+//                            score,
+//                            selected.documentId(),
+//                            selected.id()
+//                    );
+//
+//                    continue;
+//                }
 
                 String key =
                         sourceKey(source);
@@ -451,9 +510,6 @@ public class RagService {
                         indexedByKey.get(key);
 
                 if (indexed == null) {
-
-                    SegmentSearchResult selected =
-                            source.selected();
 
                     throw new IllegalStateException(
                             "No se pudo encontrar la fuente rerankeada "
@@ -465,14 +521,16 @@ public class RagService {
                     );
                 }
 
-                finalists.add(indexed);
-
-                SegmentSearchResult selected =
-                        source.selected();
+                finalists.add(
+                        new IndexedSource(
+                                indexed.index(),
+                                source
+                        )
+                );
 
                 System.out.printf(
-                        "rank=%2d | global=%2d | %s | %s%n",
-                        rank + 1,
+                        "KEEP | score=%.2f | global=%2d | %s | %s%n",
+                        score,
                         indexed.index(),
                         selected.documentId(),
                         selected.id()
@@ -491,7 +549,6 @@ public class RagService {
             );
 
             return finalists;
-
         });
     }
     private String sourceKey(

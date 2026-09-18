@@ -2,11 +2,16 @@ package kbee.rag.text;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -20,6 +25,8 @@ import kbee.rag.search.Concept;
 import kbee.rag.search.ConceptExtraction;
 import kbee.rag.search.ThesaursService;
 import reactor.core.publisher.Mono;
+
+import java.util.stream.Stream;
 
 @Service
 public class DefaultLegalTextEnhancer
@@ -80,16 +87,12 @@ public class DefaultLegalTextEnhancer
         }
 
         return conceptExtractorService
-                .candidates(
-                        text
-                )
-
+                .candidates(text)
                 .defaultIfEmpty(
                         new ConceptExtraction(
                                 List.of()
                         )
                 )
-
                 .flatMap(extraction -> {
 
                     List<Concept> candidateVoices =
@@ -97,28 +100,40 @@ public class DefaultLegalTextEnhancer
                                     ? List.of()
                                     : extraction.concepts()
                                             .stream()
-                                            .filter(
-                                                    Objects::nonNull
-                                            )
+                                            .filter(Objects::nonNull)
                                             .filter(concept ->
                                                     concept.term() != null
-                                                            && !concept.term()
-                                                                    .isBlank()
+                                                            && !concept.term().isBlank()
                                             )
                                             .toList();
 
-                    /*
-                     * No mandamos una cantidad ilimitada
-                     * de voces al LLM.
-                     */
                     List<String> llmCandidates =
                             candidateVoices.stream()
-                                    .limit(
-                                            40
-                                    )
-                                    .map(
-                                            Concept::term
-                                    )
+                                    .map(Concept::term)
+                                    .filter(Objects::nonNull)
+                                    .map(String::trim)
+                                    .filter(term -> !term.isBlank())
+                                    .flatMap(voice -> {
+
+                                        Stream<String> fullVoice =
+                                                Stream.of(voice);
+
+                                        Stream<String> atomicTerms =
+                                                Arrays.stream(
+                                                                voice.split("\\s*>\\s*")
+                                                        )
+                                                        .map(String::trim)
+                                                        .filter(term -> !term.isBlank())
+                                                        .filter(term ->
+                                                                !term.equals("DERECHO")
+                                                        );
+
+                                        return Stream.concat(
+                                                fullVoice,
+                                                atomicTerms
+                                        );
+                                    })
+                                    .distinct()
                                     .toList();
 
                     String data =
@@ -136,90 +151,57 @@ public class DefaultLegalTextEnhancer
                             new LlmRequest(
                                     instructions,
                                     data,
-                                    buildEnrichmentFormat(llmCandidates)
+                                    buildEnrichmentFormat(
+                                            llmCandidates
+                                    )
                             );
 
                     return llmService
-                            .generate(
-                                    request
-                            )
-                            .map(response -> {
-                            	
-                            	TermEvaluation evaluation =
-                            	        parseTermEvaluation(
-                            	                response
-                            	        );
+                            .generate(request)
+                            .flatMap(response -> {
 
-//                            	List<TermDecision> selectedTerms =
-//                            	        distinctTermDecisions(
-//                            	                evaluation.terminos()
-//                            	        );
-//
-//                            	List<Concept> voices =
-//                            	        rebuildSupportedVoices(
-//                            	                candidateVoices,
-//                            	                selectedTerms
-//                            	        );
-                            	
-                            	
-                            	
-                            	List<TermDecision> selectedTerms =
-                            	        distinctTermDecisions(
-                            	                evaluation.terminos()
-                            	        );
+                                TermEvaluation evaluation =
+                                        parseTermEvaluation(response);
 
-                            	Set<String> selectedVoiceSet =
-                            	        selectedTerms.stream()
-                            	                .map(TermDecision::termino)
-                            	                .filter(Objects::nonNull)
-                            	                .map(String::trim)
-                            	                .filter(term -> !term.isBlank())
-                            	                .collect(Collectors.toSet());
+                                List<Concept> voices =
+                                        reconstructVoices(
+                                                candidateVoices,
+                                                evaluation.terminos()
+                                        );
 
-                            	List<Concept> voices =
-                            	        candidateVoices == null
-                            	                ? List.of()
-                            	                : candidateVoices.stream()
-                            	                        .filter(Objects::nonNull)
-                            	                        .filter(concept ->
-                            	                                concept.term() != null
-                            	                                        && selectedVoiceSet.contains(
-                            	                                                concept.term().trim()
-                            	                                        )
-                            	                        )
-                            	                        .toList();
-                            	
-                            	
+                                voices = expand(voices);
 
                                 List<String> propositions =
                                         evaluation.propositions() == null
                                                 ? List.of()
-                                                : evaluation
-                                                        .propositions()
+                                                : evaluation.propositions()
                                                         .stream()
-                                                        .filter(
-                                                                Objects::nonNull
-                                                        )
-                                                        .map(
-                                                                String::trim
-                                                        )
+                                                        .filter(Objects::nonNull)
+                                                        .map(String::trim)
                                                         .filter(value ->
                                                                 !value.isBlank()
                                                         )
                                                         .distinct()
                                                         .toList();
 
-                                String legalText =
-                                        formatLegalText(
-                                                voices,
-                                                propositions
-                                        );
+                                return enrichLawInterpretation(
+                                        text,
+                                        voices
+                                )
+                                .map(finalVoices -> {
 
-                                return new LegalEnhancement(
-                                        legalText,
-                                        voices,
-                                        propositions
-                                );
+                                    String legalText =
+                                            formatLegalText(
+                                                    finalVoices,
+                                                    propositions
+                                            );
+
+                                    return new LegalEnhancement(
+                                            legalText,
+                                            finalVoices,
+                                            propositions
+                                    );
+                                });
                             });
                 });
     }
@@ -291,9 +273,9 @@ public class DefaultLegalTextEnhancer
                         );
                     }
 
-                    
                     long startCandidates =
                             System.nanoTime();
+
                     return conceptExtractorService
                             .candidates(
                                     text
@@ -304,14 +286,6 @@ public class DefaultLegalTextEnhancer
                                         System.nanoTime()
                                                 - startCandidates;
 
-//                                System.out.printf(
-//                                        "CANDIDATES segment=%d time=%.3f s concepts=%d%n",
-//                                        input.id(),
-//                                        elapsed / 1_000_000_000.0,
-//                                        result.concepts() == null
-//                                                ? 0
-//                                                : result.concepts().size()
-//                                );
                             })
                             .defaultIfEmpty(
                                     new ConceptExtraction(
@@ -334,11 +308,6 @@ public class DefaultLegalTextEnhancer
                                                                                 .term()
                                                                                 .isBlank()
                                                         )
-                                                        /*
-                                                         * Mismo límite que
-                                                         * el procesamiento
-                                                         * individual.
-                                                         */
                                                         .limit(
                                                                 40
                                                         )
@@ -352,13 +321,70 @@ public class DefaultLegalTextEnhancer
                             });
                 })
                 .collectList()
-                .flatMap(
-                        batchInputs ->
-                                enhanceBatch(
-                                        batchInputs,
-                                        promptName,
-                                        texts.size()
+
+                /*
+                 * Enrichment normal del batch.
+                 */
+                .flatMap(batchInputs ->
+                        enhanceBatch(
+                                batchInputs,
+                                promptName,
+                                texts.size()
+                        )
+                )
+
+                /*
+                 * Segundo paso:
+                 *
+                 * Para los segmentos que contienen una referencia
+                 * normativa preguntamos al LLM si existe una
+                 * interpretación de la norma.
+                 *
+                 * flatMapSequential permite ejecutar hasta 2
+                 * verificaciones simultáneas manteniendo el orden
+                 * original de los segmentos.
+                 */
+                .flatMap(enhancements ->
+                        reactor.core.publisher.Flux
+                                .range(
+                                        0,
+                                        enhancements.size()
                                 )
+                                .flatMapSequential(
+                                        index -> {
+
+                                            String text =
+                                                    texts.get(
+                                                            index
+                                                    );
+
+                                            LegalEnhancement enhancement =
+                                                    enhancements.get(
+                                                            index
+                                                    );
+
+                                            return enrichLawInterpretation(
+                                                    text,
+                                                    enhancement.concepts()
+                                            )
+                                            .map(finalVoices -> {
+
+                                                String legalText =
+                                                        formatLegalText(
+                                                                finalVoices,
+                                                                enhancement.propositions()
+                                                        );
+
+                                                return new LegalEnhancement(
+                                                        legalText,
+                                                        finalVoices,
+                                                        enhancement.propositions()
+                                                );
+                                            });
+                                        },
+                                        2
+                                )
+                                .collectList()
                 );
     }
 
@@ -437,15 +463,10 @@ public class DefaultLegalTextEnhancer
         }
     }
 
-    /*
-     * =================================================
-     * RECONSTRUCCIÓN DE VOCES
-     * =================================================
-     */
-
-    private List<Concept> rebuildSupportedVoices(
+    
+    private List<Concept> reconstructVoices(
             List<Concept> candidateVoices,
-            List<TermDecision> selectedTerms) {
+            List<String> selectedTerms) {
 
         if (candidateVoices == null
                 || candidateVoices.isEmpty()
@@ -455,93 +476,244 @@ public class DefaultLegalTextEnhancer
             return List.of();
         }
 
-        Set<String> supportedTerms =
+        Set<String> selectedTermSet =
                 selectedTerms.stream()
-                        .filter(
-                                Objects::nonNull
-                        )
-                        .filter(
-                                this::isSelected
-                        )
-                        .map(
-                                TermDecision::termino
-                        )
-                        .filter(
-                                Objects::nonNull
-                        )
-                        .map(
-                                String::trim
-                        )
-                        .filter(term ->
-                                !term.isBlank()
-                        )
-                        .collect(
-                                Collectors.toSet()
-                        );
+                        .filter(Objects::nonNull)
+                        .map(String::trim)
+                        .filter(term -> !term.isBlank())
+                        .collect(Collectors.toCollection(
+                                LinkedHashSet::new
+                        ));
 
-        return candidateVoices.stream()
-                .filter(
-                        Objects::nonNull
-                )
-                .filter(concept ->
-                        concept.term() != null
-                                && !concept.term()
-                                        .isBlank()
-                )
-                .filter(concept ->
-                        Arrays.stream(
-                                concept.term()
-                                        .split(">")
-                        )
-                        .map(
-                                String::trim
-                        )
-                        .filter(term ->
-                                !term.isBlank()
-                        )
-                        .allMatch(
-                                supportedTerms::contains
-                        )
-                )
-                .toList();
-    }
-    
-    private List<TermDecision> distinctTermDecisions(
-            List<TermDecision> decisions) {
+        List<Concept> result =
+                new ArrayList<>();
 
-        if (decisions == null
-                || decisions.isEmpty()) {
-            return List.of();
-        }
+        Set<String> consumedTerms =
+                new HashSet<>();
 
-        Map<String, TermDecision> unique =
-                new LinkedHashMap<>();
+        /*
+         * 1. Voces completas seleccionadas directamente
+         *    o reconstruidas a partir de sus componentes.
+         */
+        for (Concept concept : candidateVoices) {
 
-        for (TermDecision decision : decisions) {
-
-            if (decision == null
-                    || decision.termino() == null
-                    || decision.termino().isBlank()) {
+            if (concept == null
+                    || concept.term() == null
+                    || concept.term().isBlank()) {
                 continue;
             }
 
-            String term =
-                    decision.termino()
-                            .trim();
+            String voice =
+                    concept.term().trim();
 
-            unique.putIfAbsent(
-                    term,
-                    new TermDecision(
-                            term,
-                            decision.justificacion()
-                    )
-            );
+            /*
+             * Voz completa seleccionada por el LLM.
+             */
+            if (selectedTermSet.contains(voice)) {
+
+                result.add(concept);
+
+                Arrays.stream(
+                                voice.split("\\s*>\\s*")
+                        )
+                        .map(String::trim)
+                        .filter(term -> !term.isBlank())
+                        .forEach(consumedTerms::add);
+
+                continue;
+            }
+
+            /*
+             * Intentamos reconstruir la voz.
+             *
+             * DERECHO es raíz genérica y no necesita
+             * haber sido seleccionada.
+             */
+            List<String> components =
+                    Arrays.stream(
+                                    voice.split("\\s*>\\s*")
+                            )
+                            .map(String::trim)
+                            .filter(term -> !term.isBlank())
+                            .filter(term ->
+                                    !term.equals("DERECHO")
+                            )
+                            .toList();
+
+            if (!components.isEmpty()
+                    && components.stream()
+                            .allMatch(selectedTermSet::contains)) {
+
+                result.add(concept);
+                consumedTerms.addAll(components);
+            }
         }
 
-        return List.copyOf(
-                unique.values()
-        );
+        /*
+         * 2. Conservamos los términos seleccionados
+         *    que no pudieron formar parte de una voz.
+         */
+        for (String selectedTerm : selectedTermSet) {
+
+            if (consumedTerms.contains(selectedTerm)) {
+                continue;
+            }
+
+            /*
+             * Si ya agregamos exactamente esa voz,
+             * no la repetimos.
+             */
+            boolean alreadyPresent =
+                    result.stream()
+                            .anyMatch(concept ->
+                                    selectedTerm.equals(
+                                            concept.term().trim()
+                                    )
+                            );
+
+            if (alreadyPresent) {
+                continue;
+            }
+
+            /*
+             * Recuperamos el score del mejor candidato
+             * que contenga ese término como componente.
+             */
+            candidateVoices.stream()
+                    .filter(Objects::nonNull)
+                    .filter(concept ->
+                            concept.term() != null
+                    )
+                    .filter(concept ->
+                            Arrays.stream(
+                                            concept.term()
+                                                    .split("\\s*>\\s*")
+                                    )
+                                    .map(String::trim)
+                                    .anyMatch(
+                                            selectedTerm::equals
+                                    )
+                    )
+                    .max(Comparator.comparingDouble(
+                            Concept::score
+                    ))
+                    .ifPresent(concept ->
+                            result.add(
+                                    new Concept(
+                                            selectedTerm,
+                                            concept.score()
+                                    )
+                            )
+                    );
+        }
+
+        return result;
     }
+    /*
+     * =================================================
+     * RECONSTRUCCIÓN DE VOCES
+     * =================================================
+     */
+
+//    private List<Concept> rebuildSupportedVoices(
+//            List<Concept> candidateVoices,
+//            List<TermDecision> selectedTerms) {
+//
+//        if (candidateVoices == null
+//                || candidateVoices.isEmpty()
+//                || selectedTerms == null
+//                || selectedTerms.isEmpty()) {
+//
+//            return List.of();
+//        }
+//
+//        Set<String> supportedTerms =
+//                selectedTerms.stream()
+//                        .filter(
+//                                Objects::nonNull
+//                        )
+//                        .filter(
+//                                this::isSelected
+//                        )
+//                        .map(
+//                                TermDecision::termino
+//                        )
+//                        .filter(
+//                                Objects::nonNull
+//                        )
+//                        .map(
+//                                String::trim
+//                        )
+//                        .filter(term ->
+//                                !term.isBlank()
+//                        )
+//                        .collect(
+//                                Collectors.toSet()
+//                        );
+//
+//        return candidateVoices.stream()
+//                .filter(
+//                        Objects::nonNull
+//                )
+//                .filter(concept ->
+//                        concept.term() != null
+//                                && !concept.term()
+//                                        .isBlank()
+//                )
+//                .filter(concept ->
+//                        Arrays.stream(
+//                                concept.term()
+//                                        .split(">")
+//                        )
+//                        .map(
+//                                String::trim
+//                        )
+//                        .filter(term ->
+//                                !term.isBlank()
+//                        )
+//                        .allMatch(
+//                                supportedTerms::contains
+//                        )
+//                )
+//                .toList();
+//    }
+    
+//    private List<TermDecision> distinctTermDecisions(
+//            List<TermDecision> decisions) {
+//
+//        if (decisions == null
+//                || decisions.isEmpty()) {
+//            return List.of();
+//        }
+//
+//        Map<String, TermDecision> unique =
+//                new LinkedHashMap<>();
+//
+//        for (TermDecision decision : decisions) {
+//
+//            if (decision == null
+//                    || decision.termino() == null
+//                    || decision.termino().isBlank()) {
+//                continue;
+//            }
+//
+//            String term =
+//                    decision.termino()
+//                            .trim();
+//
+//            unique.putIfAbsent(
+//                    term,
+//                    new TermDecision(
+//                            term,
+//                            decision.justificacion()
+//                    )
+//            );
+//        }
+//
+//        return List.copyOf(
+//                unique.values()
+//        );
+//    }
 
     /*
      * Protección adicional.
@@ -549,32 +721,149 @@ public class DefaultLegalTextEnhancer
      * El prompt actual no debería devolver FALSE,
      * pero mantenemos esta validación por robustez.
      */
-    private boolean isSelected(
-            TermDecision decision) {
+//    private boolean isSelected(
+//            TermDecision decision) {
+//
+//        if (decision == null) {
+//            return false;
+//        }
+//
+//        String justification =
+//                decision.justificacion();
+//
+//        if (justification == null
+//                || justification.isBlank()) {
+//
+//            return true;
+//        }
+//
+//        String normalized =
+//                justification
+//                        .trim()
+//                        .toUpperCase();
+//
+//        return !normalized.contains(
+//                "FALSE"
+//        );
+//    }
+    
+    
+    private Mono<List<Concept>> enrichLawInterpretation(
+            String text,
+            List<Concept> selectedVoices) {
 
-        if (decision == null) {
+        if (!containsLegalReference(text)) {
+            return Mono.just(selectedVoices);
+        }
+
+        
+        String instructions =
+                instructionProvider.get(
+                        "law-interpretation"
+                );
+        
+//        String instructions2 =
+//                """
+//                Determina si el TEXTO realiza una interpretación jurídica
+//                de una ley o de una disposición legal mencionada en él.
+//
+//                Existe interpretación cuando el texto determina, analiza
+//                o discute el sentido, alcance o aplicabilidad de la norma.
+//
+//                La mera cita, mención o invocación de una ley o artículo
+//                no constituye interpretación.
+//
+//                Responde únicamente true o false.
+//                """;
+
+        LlmRequest request =
+                new LlmRequest(
+                        instructions,
+                        text,
+                        Map.of(
+                                "type", "boolean"
+                        )
+                );
+
+        return llmService
+                .generate(request)
+                .map(response -> {
+
+                    boolean interpretation =
+                            Boolean.parseBoolean(
+                                    response.trim()
+                            );
+
+                    if (!interpretation) {
+                        return selectedVoices;
+                    }
+
+                    boolean alreadyPresent =
+                            selectedVoices.stream()
+                                    .anyMatch(concept ->
+                                            "INTERPRETACION DE LA LEY"
+                                                    .equals(concept.term())
+                                    );
+
+                    if (alreadyPresent) {
+                        return selectedVoices;
+                    }
+
+                    List<Concept> result =
+                            new ArrayList<>(selectedVoices);
+
+                    result.add(
+                            new Concept(
+                                    "INTERPRETACION DE LA LEY",
+                                    (float)1.0
+                            )
+                    );
+
+                    return List.copyOf(result);
+                });
+    }
+    
+    private static final Pattern LEGAL_REFERENCE_PATTERN =
+            Pattern.compile(
+                    "\\b(?:"
+                            + "ley(?:es)?"
+                            + "|decreto(?:s)?"
+                            + "|art(?:í|i)culo(?:s)?"
+                            + "|art\\."
+                            + ")\\b",
+                    Pattern.CASE_INSENSITIVE
+                            | Pattern.UNICODE_CASE
+            );
+
+    private boolean containsLegalReference(
+            String text) {
+
+        if (text == null || text.isBlank()) {
             return false;
         }
 
-        String justification =
-                decision.justificacion();
-
-        if (justification == null
-                || justification.isBlank()) {
-
-            return true;
-        }
-
-        String normalized =
-                justification
-                        .trim()
-                        .toUpperCase();
-
-        return !normalized.contains(
-                "FALSE"
-        );
+        return LEGAL_REFERENCE_PATTERN
+                .matcher(text)
+                .find();
     }
 
+    
+    /*
+     * =================================================
+     * EXPANSION POR RELACIONES
+     *  =================================================
+     */
+    private List<Concept> expand(List<Concept> voices) {
+    	List<Concept> expanded = new ArrayList<>();
+    	for (Concept voice : voices) {
+    		if (voice.term().equals("PRUEBA > NEGLIGENCIA PROBATORIA")) {
+        		expanded.add(new Concept("PRUEBA > PRODUCCION > NEGLIGENCIA PROBATORIA", voice.score()));
+    		}
+    		expanded.add(voice);
+    	}
+    	return expanded;
+    }
+    
     /*
      * =================================================
      * REPARACIÓN JSON
@@ -797,9 +1086,109 @@ public class DefaultLegalTextEnhancer
             List<BatchCandidateInput> inputs,
             String promptName) {
 
+        /*
+         * Para el LLM descomponemos las voces del tesauro.
+         *
+         * Ejemplo:
+         *
+         * PRUEBA > PRODUCCION > NEGLIGENCIA PROBATORIA
+         *
+         * se envía como:
+         *
+         * PRUEBA > PRODUCCION > NEGLIGENCIA PROBATORIA
+         * PRUEBA
+         * PRODUCCION
+         * NEGLIGENCIA PROBATORIA
+         *
+         * Se excluye DERECHO como término atómico.
+         *
+         * Los candidateVoices originales de "inputs" no se modifican,
+         * porque después son necesarios para reconstructVoices().
+         */
+        List<BatchCandidateInput> llmInputs =
+                inputs.stream()
+                        .map(input -> {
+
+                            List<Concept> llmCandidates =
+                                    input.candidateVoices() == null
+                                            ? List.of()
+                                            : input.candidateVoices()
+                                                    .stream()
+                                                    .filter(Objects::nonNull)
+                                                    .filter(concept ->
+                                                            concept.term() != null
+                                                                    && !concept.term().isBlank()
+                                                    )
+                                                    .flatMap(concept -> {
+
+                                                        String voice =
+                                                                concept.term().trim();
+
+                                                        Stream<Concept> fullVoice =
+                                                                Stream.of(
+                                                                        concept
+                                                                );
+
+                                                        Stream<Concept> atomicTerms =
+                                                                Arrays.stream(
+                                                                                voice.split(
+                                                                                        "\\s*>\\s*"
+                                                                                )
+                                                                        )
+                                                                        .map(String::trim)
+                                                                        .filter(term ->
+                                                                                !term.isBlank()
+                                                                        )
+                                                                        .filter(term ->
+                                                                                !term.equals(
+                                                                                        "DERECHO"
+                                                                                )
+                                                                        )
+                                                                        .map(term ->
+                                                                                new Concept(
+                                                                                        term,
+                                                                                        concept.score()
+                                                                                )
+                                                                        );
+
+                                                        return Stream.concat(
+                                                                fullVoice,
+                                                                atomicTerms
+                                                        );
+                                                    })
+                                                    /*
+                                                     * distinct() no alcanza si Concept
+                                                     * incluye score en equals().
+                                                     *
+                                                     * Queremos términos únicos.
+                                                     */
+                                                    .collect(
+                                                            Collectors.toMap(
+                                                                    Concept::term,
+                                                                    Function.identity(),
+                                                                    (first, second) ->
+                                                                            first.score()
+                                                                                    >= second.score()
+                                                                                    ? first
+                                                                                    : second,
+                                                                    LinkedHashMap::new
+                                                            )
+                                                    )
+                                                    .values()
+                                                    .stream()
+                                                    .toList();
+
+                            return new BatchCandidateInput(
+                                    input.id(),
+                                    input.text(),
+                                    llmCandidates
+                            );
+                        })
+                        .toList();
+
         String data =
                 buildBatchTextData(
-                        inputs
+                        llmInputs
                 );
 
         String instructions =
@@ -807,12 +1196,12 @@ public class DefaultLegalTextEnhancer
                         promptName
                 );
 
-         LlmRequest request =
+        LlmRequest request =
                 new LlmRequest(
                         instructions,
                         data,
                         buildBatchEnrichmentFormat(
-                                inputs
+                                llmInputs
                         )
                 );
 
@@ -1305,65 +1694,10 @@ public class DefaultLegalTextEnhancer
         int maxTerms =
                 candidateConcepts == null
                         ? 0
-                        : candidateConcepts.stream()
+                        : (int) candidateConcepts.stream()
                                 .filter(Objects::nonNull)
-                                .flatMap(voice ->
-                                        Arrays.stream(
-                                                voice.split(">")
-                                        )
-                                )
-                                .map(String::trim)
-                                .filter(term ->
-                                        !term.isBlank()
-                                )
                                 .distinct()
-                                .toList()
-                                .size();
-
-        Map<String, Object> termProperties =
-                new LinkedHashMap<>();
-
-        termProperties.put(
-                "termino",
-                Map.of(
-                        "type",
-                        "string"
-                )
-        );
-
-        termProperties.put(
-                "justificacion",
-                Map.of(
-                        "type",
-                        "string"
-                )
-        );
-
-        Map<String, Object> termSchema =
-                new LinkedHashMap<>();
-
-        termSchema.put(
-                "type",
-                "object"
-        );
-
-        termSchema.put(
-                "properties",
-                termProperties
-        );
-
-        termSchema.put(
-                "required",
-                List.of(
-                        "termino",
-                        "justificacion"
-                )
-        );
-
-        termSchema.put(
-                "additionalProperties",
-                false
-        );
+                                .count();
 
         Map<String, Object> termsSchema =
                 new LinkedHashMap<>();
@@ -1375,7 +1709,10 @@ public class DefaultLegalTextEnhancer
 
         termsSchema.put(
                 "items",
-                termSchema
+                Map.of(
+                        "type",
+                        "string"
+                )
         );
 
         termsSchema.put(
@@ -1445,7 +1782,6 @@ public class DefaultLegalTextEnhancer
 
         return schema;
     }
-
     /*
      * =================================================
      * DATOS PARA EL PROMPT
@@ -1811,14 +2147,9 @@ public class DefaultLegalTextEnhancer
     ) {
     }
 
-    private record TermDecision(
-            String termino,
-            String justificacion
-    ) {
-    }
 
     private record TermEvaluation(
-            List<TermDecision> terminos,
+            List<String> terminos,
             List<String> propositions
     ) {
     }

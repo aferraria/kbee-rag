@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -21,17 +22,23 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import kbee.rag.embedding.EmbeddingService;
-import kbee.rag.llm.LlmRequest;
 import kbee.rag.llm.LlmService;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 @Service
 public class ThesaursService {
+	
+	
+
+	    private static final Logger log =
+	            LoggerFactory.getLogger(ThesaursService.class);
 
     /*
      * Cantidad máxima de voces que finalmente
@@ -155,6 +162,12 @@ public class ThesaursService {
         /*
          * =============================================
          * 2. Embedding batch
+         *
+         * Primer embedding:
+         *   segmento completo
+         *
+         * Resto:
+         *   una entrada por ventana
          * =============================================
          */
 
@@ -168,7 +181,7 @@ public class ThesaursService {
                         segmentText
                 )
         );
-        
+
         for (String window : windows) {
 
             textsToEmbed.add(
@@ -177,7 +190,7 @@ public class ThesaursService {
                     )
             );
         }
-        
+
         List<List<Float>> embeddings =
                 embeddingService.embed(
                         textsToEmbed
@@ -211,6 +224,8 @@ public class ThesaursService {
 
         /*
          * Safety net global.
+         *
+         * Buscamos sobre el segmento completo.
          */
         List<ThesaurusCandidate> globalCandidates =
                 findVectorCandidates(
@@ -229,39 +244,139 @@ public class ThesaursService {
         );
 
         /*
+         * Conservamos los rankings individuales
+         * de cada ventana.
+         */
+        List<List<ThesaurusCandidate>> vectorByWindow =
+                new ArrayList<>();
+
+        /*
+         * Estadísticas temporales de diagnóstico.
+         */
+        Map<String, Integer> vectorWindowHits =
+                new HashMap<>();
+
+        Map<String, Integer> vectorWindowTop1 =
+                new HashMap<>();
+
+        Map<String, Integer> vectorWindowTop3 =
+                new HashMap<>();
+
+        /*
          * Búsquedas vectoriales por ventana.
          */
         for (int i = 0;
                 i < windows.size();
                 i++) {
-        	
-        	String window = windows.get(i);
-//            System.out.println();
-//            System.out.println(
-//                    "WINDOW: [" + window + "]"
-//            );
 
+            String window =
+                    windows.get(i);
+
+            if (log.isDebugEnabled()) {
+
+                log.debug(
+                        "===== VECTOR QUERY ====="
+                );
+
+                log.debug(
+                        "WINDOW: [{}]",
+                        window
+                );
+            }
+ 
             List<ThesaurusCandidate> candidates =
                     findVectorCandidates(
-                            embeddings.get(
-                                    i + 1
-                            ),
+                            embeddings.get(i + 1),
                             20
                     );
+
             candidates =
                     normalizeCandidates(
                             candidates
                     );
-            
-           // printCandidates(candidates);
 
+            logCandidates(
+                    candidates
+            );
+
+            if (candidates == null
+                    || candidates.isEmpty()) {
+
+                continue;
+            }
+
+            /*
+             * Conservamos el ranking particular
+             * de esta ventana.
+             */
+            vectorByWindow.add(
+                    candidates
+            );
+
+            /*
+             * Estadísticas por ventana.
+             */
+            for (int rank = 0;
+                    rank < candidates.size();
+                    rank++) {
+
+                ThesaurusCandidate candidate =
+                        candidates.get(rank);
+
+                String voice =
+                        candidate.voice();
+
+                vectorWindowHits.merge(
+                        voice,
+                        1,
+                        Integer::sum
+                );
+
+                if (rank == 0) {
+
+                    vectorWindowTop1.merge(
+                            voice,
+                            1,
+                            Integer::sum
+                    );
+                }
+
+                if (rank < 3) {
+
+                    vectorWindowTop3.merge(
+                            voice,
+                            1,
+                            Integer::sum
+                    );
+                }
+            }
+
+            /*
+             * Mantenemos también el ranking
+             * vectorial global.
+             */
             mergeCandidates(
                     vectorMerged,
                     candidates
             );
         }
 
-        List<ThesaurusCandidate> vectorCandidates =
+        /*
+         * =============================================
+         * 4. Selección vectorial
+         *
+         * 20 mejores globales
+         * +
+         * round-robin por ventana hasta completar 40.
+         *
+         * Esto combina:
+         *
+         * - relevancia global;
+         * - diversidad semántica por ventana.
+         * =============================================
+         */
+
+        List<ThesaurusCandidate> vectorCandidatesGlobal =
                 vectorMerged.values()
                         .stream()
                         .sorted(
@@ -271,28 +386,124 @@ public class ThesaursService {
                         )
                         .toList();
 
+        Map<String, ThesaurusCandidate> vectorSelected =
+                new LinkedHashMap<>();
+
+        /*
+         * Primero reservamos los 20 mejores
+         * del ranking vectorial global.
+         */
+        vectorCandidatesGlobal.stream()
+                .limit(20)
+                .forEach(candidate ->
+                        vectorSelected.putIfAbsent(
+                                candidate.voice(),
+                                candidate
+                        )
+                );
+
+        /*
+         * Después completamos hasta 40 mediante
+         * round-robin sobre los rankings de
+         * las distintas ventanas.
+         *
+         * Primera vuelta:
+         *   top 1 de cada ventana.
+         *
+         * Segunda vuelta:
+         *   top 2 de cada ventana.
+         *
+         * etc.
+         */
+        int vectorRank = 0;
+
+        while (vectorSelected.size() < 40) {
+
+            boolean foundCandidate =
+                    false;
+
+            for (List<ThesaurusCandidate> candidates :
+                    vectorByWindow) {
+
+                if (vectorRank
+                        >= candidates.size()) {
+
+                    continue;
+                }
+
+                foundCandidate =
+                        true;
+
+                ThesaurusCandidate candidate =
+                        candidates.get(
+                                vectorRank
+                        );
+
+                vectorSelected.putIfAbsent(
+                        candidate.voice(),
+                        candidate
+                );
+
+                if (vectorSelected.size()
+                        >= 40) {
+
+                    break;
+                }
+            }
+
+            /*
+             * Ninguna ventana tiene más candidatos
+             * para este rank.
+             */
+            if (!foundCandidate) {
+                break;
+            }
+
+            vectorRank++;
+        }
+
+        List<ThesaurusCandidate> vectorCandidates =
+                new ArrayList<>(
+                        vectorSelected.values()
+                );
+
         /*
          * =============================================
-         * 4. Candidatos léxicos por ventana
+         * 5. Candidatos léxicos por ventana
          *
-         * No usamos un único ranking global.
-         * Conservamos los resultados por ventana para
-         * seleccionar luego de manera round-robin.
+         * Conservamos los resultados por ventana
+         * para hacer selección round-robin.
          * =============================================
          */
 
         List<List<ThesaurusCandidate>> lexicalByWindow =
                 new ArrayList<>();
 
+        /*
+         * Estadísticas temporales de diagnóstico.
+         */
+        Map<String, Integer> lexicalWindowHits =
+                new HashMap<>();
+
+        Map<String, Integer> lexicalWindowTop1 =
+                new HashMap<>();
+
+        Map<String, Integer> lexicalWindowTop3 =
+                new HashMap<>();
+
         for (String window : windows) {
-        	
-//            System.out.println();
-//            System.out.println(
-//                    "===== LEXICAL QUERY ====="
-//            );
-//            System.out.println(
-//                    "WINDOW: [" + window + "]"
-//            );
+
+            if (log.isDebugEnabled()) {
+
+                log.debug(
+                        "===== LEXICAL QUERY ====="
+                );
+
+                log.debug(
+                        "WINDOW: [{}]",
+                        window
+                );
+            }
 
             List<ThesaurusCandidate> candidates =
                     findLexicalCandidates(
@@ -300,35 +511,72 @@ public class ThesaursService {
                             10
                     );
             
-  //          printCandidates(candidates);
+            logCandidates(candidates);
 
-            if (candidates != null
-                    && !candidates.isEmpty()) {
+            if (candidates == null
+                    || candidates.isEmpty()) {
 
-                lexicalByWindow.add(
-                        candidates
+                continue;
+            }
+
+            lexicalByWindow.add(
+                    candidates
+            );
+
+            /*
+             * Estadísticas lexicales por ventana.
+             */
+            for (int rank = 0;
+                    rank < candidates.size();
+                    rank++) {
+
+                ThesaurusCandidate candidate =
+                        candidates.get(rank);
+
+                String voice =
+                        candidate.voice();
+
+                lexicalWindowHits.merge(
+                        voice,
+                        1,
+                        Integer::sum
                 );
+
+                if (rank == 0) {
+
+                    lexicalWindowTop1.merge(
+                            voice,
+                            1,
+                            Integer::sum
+                    );
+                }
+
+                if (rank < 3) {
+
+                    lexicalWindowTop3.merge(
+                            voice,
+                            1,
+                            Integer::sum
+                    );
+                }
             }
         }
 
         /*
          * =============================================
-         * 5. Selección lexical diversificada
+         * 6. Selección lexical diversificada
          *
-         * Tomamos:
+         * Round-robin:
          *
          * ventana 1 -> candidato 1
          * ventana 2 -> candidato 1
          * ventana 3 -> candidato 1
          * ...
          *
-         * luego:
+         * luego candidato 2 de cada ventana,
+         * etc.
          *
-         * ventana 1 -> candidato 2
-         * ventana 2 -> candidato 2
-         * ...
-         *
-         * hasta completar 20 voces distintas.
+         * Hasta completar 20 voces distintas.
          * =============================================
          */
 
@@ -339,16 +587,20 @@ public class ThesaursService {
 
         while (lexicalMerged.size() < 20) {
 
-            boolean foundCandidate = false;
+            boolean foundCandidate =
+                    false;
 
             for (List<ThesaurusCandidate> candidates :
                     lexicalByWindow) {
 
-                if (lexicalRank >= candidates.size()) {
+                if (lexicalRank
+                        >= candidates.size()) {
+
                     continue;
                 }
 
-                foundCandidate = true;
+                foundCandidate =
+                        true;
 
                 ThesaurusCandidate candidate =
                         candidates.get(
@@ -360,7 +612,9 @@ public class ThesaursService {
                         candidate
                 );
 
-                if (lexicalMerged.size() >= 20) {
+                if (lexicalMerged.size()
+                        >= 20) {
+
                     break;
                 }
             }
@@ -383,17 +637,25 @@ public class ThesaursService {
 
         /*
          * =============================================
-         * 6. Unión final
+         * 7. Unión final
          *
          * 40 vectoriales
          * 20 lexicales
-         * máximo 60 candidatos para el LLM
+         *
+         * máximo 60 candidatos para el LLM.
          * =============================================
          */
 
         Map<String, ThesaurusCandidate> finalCandidates =
                 new LinkedHashMap<>();
 
+        /*
+         * Primero los 40 vectoriales seleccionados:
+         *
+         * 20 globales
+         * +
+         * hasta 20 diversificados por ventana.
+         */
         vectorCandidates.stream()
                 .limit(40)
                 .forEach(candidate ->
@@ -403,6 +665,10 @@ public class ThesaursService {
                         )
                 );
 
+        /*
+         * Después hasta 20 lexicales
+         * diversificados por ventana.
+         */
         lexicalCandidates.stream()
                 .limit(20)
                 .forEach(candidate ->
@@ -413,15 +679,18 @@ public class ThesaursService {
                 );
 
         /*
-         * Si hubo coincidencias entre vectorial y lexical,
-         * quedan lugares libres.
+         * Si hubo coincidencias entre vectorial
+         * y lexical quedan lugares libres.
          *
-         * Los completamos primero con vectoriales.
+         * Completamos primero con el ranking
+         * vectorial global.
          */
         for (ThesaurusCandidate candidate :
-                vectorCandidates) {
+                vectorCandidatesGlobal) {
 
-            if (finalCandidates.size() >= 60) {
+            if (finalCandidates.size()
+                    >= 60) {
+
                 break;
             }
 
@@ -432,12 +701,15 @@ public class ThesaursService {
         }
 
         /*
-         * Y luego con lexicales si todavía queda lugar.
+         * Y luego con lexicales si todavía
+         * queda algún lugar.
          */
         for (ThesaurusCandidate candidate :
                 lexicalCandidates) {
 
-            if (finalCandidates.size() >= 60) {
+            if (finalCandidates.size()
+                    >= 60) {
+
                 break;
             }
 
@@ -446,19 +718,76 @@ public class ThesaursService {
                     candidate
             );
         }
-        
+
+        /*
+         * =============================================
+         * 8. Diagnóstico
+         * =============================================
+         */
+
+        if (log.isDebugEnabled()) {
+
+            log.debug(
+                    "===== FINAL ====="
+            );
+            logCandidates(
+                    List.copyOf(
+                            finalCandidates.values()
+                    )
+            );
+        }
+
+//        String diagnosticVoice =
+//                "PRUEBA > NEGLIGENCIA PROBATORIA";
+//
+//        System.out.println();
 //        System.out.println(
-//                "===== FINAL ====="
+//                "===== VECTOR WINDOW STATS ====="
 //        );
-//        printCandidates(
-//                List.copyOf(finalCandidates.values())
+//
+//        System.out.printf(
+//                "%s | windows=%d | top1=%d | top3=%d%n",
+//                diagnosticVoice,
+//                vectorWindowHits.getOrDefault(
+//                        diagnosticVoice,
+//                        0
+//                ),
+//                vectorWindowTop1.getOrDefault(
+//                        diagnosticVoice,
+//                        0
+//                ),
+//                vectorWindowTop3.getOrDefault(
+//                        diagnosticVoice,
+//                        0
+//                )
+//        );
+
+//        System.out.println();
+//        System.out.println(
+//                "===== LEXICAL WINDOW STATS ====="
+//        );
+//
+//        System.out.printf(
+//                "%s | windows=%d | top1=%d | top3=%d%n",
+//                diagnosticVoice,
+//                lexicalWindowHits.getOrDefault(
+//                        diagnosticVoice,
+//                        0
+//                ),
+//                lexicalWindowTop1.getOrDefault(
+//                        diagnosticVoice,
+//                        0
+//                ),
+//                lexicalWindowTop3.getOrDefault(
+//                        diagnosticVoice,
+//                        0
+//                )
 //        );
 
         return new ArrayList<>(
                 finalCandidates.values()
         );
     }
-    
     public List<ThesaurusCandidate> findVectorCandidates(
             List<Float> vector,
             int topK) {
@@ -766,27 +1095,8 @@ public class ThesaursService {
         List<String> windows =
                 new ArrayList<>();
         
-//        addWindows(
-//                windows,
-//                words,
-//                7,
-//                3,
-//                4
-//        );
-        
         addWindows(windows, words, 10, 5, 3);
-
-        /*
-         * Ventanas algo más amplias:
-         * conservan contexto cuando hace falta.
-         */
-//        addWindows(
-//                windows,
-//                words,
-//                10,
-//                5,
-//                5
-//        );
+        addWindows(windows, words, 20, 10, 6);
 
 
         return windows.stream()
@@ -850,30 +1160,19 @@ public class ThesaursService {
         }
     }
     
-    private void printCandidates(
+    private void logCandidates(
             List<ThesaurusCandidate> candidates) {
 
-        if (candidates == null
-                || candidates.isEmpty()) {
-
-            System.out.println(
-                    "(sin candidatos)"
-            );
-
+        if (!log.isDebugEnabled()) {
             return;
         }
 
-        int position = 1;
+        for (ThesaurusCandidate candidate : candidates) {
 
-        for (ThesaurusCandidate candidate :
-                candidates) {
-
-            System.out.println(
-                    position++
-                            + " | "
-                            + candidate.voice()
-                            + " | knnScore="
-                            + candidate.score()
+            log.debug(
+                    "{} | score={}",
+                    candidate.voice(),
+                    candidate.score()
             );
         }
     }

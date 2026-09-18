@@ -17,8 +17,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
-public class JudicialDocumentDao
-        implements DocumentDao {
+public class JudicialDocumentDao implements DocumentDao {
 
     private static final int MAX_HITS_PER_DOCUMENT =
             3;

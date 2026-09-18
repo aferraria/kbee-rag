@@ -69,7 +69,14 @@ public class LocalQwenRerankerService
                         )
                         .build();
     }
-
+    
+    @Override
+    public Mono<List<ExpandedSource>> rerankFinal(
+            RerankRequest request,
+            int topK) {
+    	return Mono.empty();
+    }
+    
     @Override
     public Mono<List<ExpandedSource>> rerank(
             RerankRequest request,
@@ -317,18 +324,24 @@ public class LocalQwenRerankerService
                 .trim();
     }
     
+//    private String buildQuery(
+//            RerankRequest request) {
+//
+//        return """
+//                %s
+//
+//                Consulta del usuario:
+//                %s
+//                """.formatted(
+//                        request.instructions(),
+//                        request.question()
+//                );
+//    }
+    
     private String buildQuery(
             RerankRequest request) {
 
-        return """
-                %s
-
-                Consulta del usuario:
-                %s
-                """.formatted(
-                        request.instructions(),
-                        request.question()
-                );
+        return request.question();
     }
 
     /*

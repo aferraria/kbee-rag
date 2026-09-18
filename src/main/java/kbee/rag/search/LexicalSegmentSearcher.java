@@ -1,8 +1,12 @@
 package kbee.rag.search;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -25,7 +29,7 @@ public class LexicalSegmentSearcher
             30.0;
 
     private static final double LAW_NUMBER_BOOST =
-            10.0;
+            8.0;
 
     private final SegmentDao solrService;
 
@@ -51,6 +55,7 @@ public class LexicalSegmentSearcher
          */
         Flux<SegmentSearchResult> legal =
                 searchLegal(
+                		extended.query(),
                         extended.propositions(),
                         extended.thesaurusTerms(),
                         extended.filters(),
@@ -83,13 +88,15 @@ public class LexicalSegmentSearcher
      */
     
     private Flux<SegmentSearchResult> searchLegal(
+            String question,
             List<String> propositions,
             List<Concept> terms,
             List<String> filters,
             int topK) {
 
         if ((propositions == null || propositions.isEmpty())
-                && (terms == null || terms.isEmpty())) {
+                && (terms == null || terms.isEmpty())
+                && (question == null || question.isBlank())) {
 
             return Flux.empty();
         }
@@ -97,37 +104,102 @@ public class LexicalSegmentSearcher
         ModifiableSolrParams params =
                 new ModifiableSolrParams();
 
+        /*
+         * Detectamos si la consulta contiene una referencia
+         * explícita a una ley.
+         *
+         * Ejemplo:
+         *
+         * "interpretación de la ley 12183"
+         *
+         * -> ["12183"]
+         */
+        List<String> lawNumbers =
+                extractLawNumbers(
+                        question
+                );
+
+        boolean hasLawNumbers =
+                !lawNumbers.isEmpty();
+
         String conceptualQuery =
                 buildConceptualQuery(
                         terms
                 );
 
+        /*
+         * Sin número de ley:
+         *
+         * legal_proposition ^4
+         *
+         * Con número de ley:
+         *
+         * legal_proposition ^1
+         *
+         * porque el número de ley pasa a ser una señal
+         * específica adicional.
+         */
         String propositionQuery =
                 buildPropositionQuery(
-                        propositions
+                        propositions,
+                        hasLawNumbers
+                                ? 1.0
+                                : 4.0
                 );
 
-        String legalQuery;
+        /*
+         * Si existe una referencia a una ley:
+         *
+         * Ley 12183
+         *
+         * agregamos:
+         *
+         * segment_text:(12183)^4
+         */
+        String lawNumberQuery =
+                buildLawNumberQuery(
+                        question
+                );
 
-        if (conceptualQuery.isBlank()) {
+        List<String> queryParts =
+                new ArrayList<>();
 
-            legalQuery =
-                    propositionQuery;
+        if (!conceptualQuery.isBlank()) {
 
-        } else if (propositionQuery.isBlank()) {
-
-            legalQuery =
-                    conceptualQuery;
-
-        } else {
-
-            legalQuery =
+            queryParts.add(
                     "("
                             + conceptualQuery
-                            + ") OR ("
-                            + propositionQuery
-                            + ")";
+                            + ")"
+            );
         }
+
+        if (!propositionQuery.isBlank()) {
+
+            queryParts.add(
+                    "("
+                            + propositionQuery
+                            + ")"
+            );
+        }
+
+        if (!lawNumberQuery.isBlank()) {
+
+            queryParts.add(
+                    "("
+                            + lawNumberQuery
+                            + ")"
+            );
+        }
+
+        if (queryParts.isEmpty()) {
+            return Flux.empty();
+        }
+
+        String legalQuery =
+                String.join(
+                        " OR ",
+                        queryParts
+                );
 
         params.set(
                 "q",
@@ -144,12 +216,19 @@ public class LexicalSegmentSearcher
                 "(document_type:sumario OR document_type:fallo)"
         );
 
-        for (String filter : filters) {
+        if (filters != null) {
 
-            params.add(
-                    "fq",
-                    filter
-            );
+            for (String filter : filters) {
+
+                if (filter != null
+                        && !filter.isBlank()) {
+
+                    params.add(
+                            "fq",
+                            filter
+                    );
+                }
+            }
         }
 
         params.set(
@@ -163,7 +242,8 @@ public class LexicalSegmentSearcher
     }
     
     private String buildPropositionQuery(
-            List<String> propositions) {
+            List<String> propositions,
+            double boost) {
 
         if (propositions == null
                 || propositions.isEmpty()) {
@@ -174,16 +254,70 @@ public class LexicalSegmentSearcher
         return propositions.stream()
                 .filter(Objects::nonNull)
                 .map(String::trim)
-                .filter(text -> !text.isBlank())
-                .map(text ->
+                .filter(proposition ->
+                        !proposition.isBlank()
+                )
+                .map(proposition ->
                         "legal_proposition:("
-                                + ClientUtils.escapeQueryChars(text)
-                                + ")^4"
+                                + escape(proposition)
+                                + ")^"
+                                + boost
                 )
                 .collect(
-                        Collectors.joining(" OR ")
+                        Collectors.joining(
+                                " OR "
+                        )
                 );
     }
+    
+//    private String buildConceptualQuery(
+//            List<Concept> terms) {
+//
+//        if (terms == null || terms.isEmpty()) {
+//            return "";
+//        }
+//
+//        return terms.stream()
+//                .filter(Objects::nonNull)
+//                .map(Concept::term)
+//                .filter(Objects::nonNull)
+//                .map(String::trim)
+//                .filter(term -> !term.isBlank())
+//                .map(term -> {
+//
+//                    String[] components =
+//                            term.split("\\s*>\\s*");
+//
+//                    int depth =
+//                            components.length;
+//
+//                    if (depth == 1) {
+//                        return "thesaurus_term:(\""
+//                                + escape(term)
+//                                + "\")^"
+//                                + depth;
+//                    }
+//
+//                    String componentQuery =
+//                            Arrays.stream(components)
+//                                    .map(String::trim)
+//                                    .filter(s -> !s.isBlank())
+//                                    .map(s ->
+//                                            "\"" + escape(s) + "\""
+//                                    )
+//                                    .collect(
+//                                            Collectors.joining(" AND ")
+//                                    );
+//
+//                    return "thesaurus_term:("
+//                            + componentQuery
+//                            + ")^"
+//                            + depth;
+//                })
+//                .collect(
+//                        Collectors.joining(" OR ")
+//                );
+//    }
     
     private String buildConceptualQuery(
             List<Concept> terms) {
@@ -227,7 +361,65 @@ public class LexicalSegmentSearcher
                 .filter(part -> !part.isBlank())
                 .count();
     }
+    
+    private static final Pattern LAW_NUMBER_PATTERN =
+            Pattern.compile(
+                    "\\bley(?:es)?\\s+(\\d+(?:[./-]\\d+)*)",
+                    Pattern.CASE_INSENSITIVE
+                            | Pattern.UNICODE_CASE
+            );
+    
+    private String buildLawNumberQuery(
+            String question) {
 
+        List<String> lawNumbers =
+                extractLawNumbers(
+                        question
+                );
+
+        if (lawNumbers.isEmpty()) {
+            return "";
+        }
+
+        return lawNumbers.stream()
+                .map(number ->
+                        "segment_text:("
+                                + ClientUtils.escapeQueryChars(
+                                        number
+                                )
+                                + ")^"
+                                + LAW_NUMBER_BOOST
+                )
+                .collect(
+                        Collectors.joining(
+                                " OR "
+                        )
+                );
+    }
+    
+    private List<String> extractLawNumbers(
+            String query) {
+
+        if (query == null
+                || query.isBlank()) {
+
+            return List.of();
+        }
+
+        return LAW_PATTERN
+                .matcher(query)
+                .results()
+                .map(match ->
+                        match.group(1)
+                )
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(number ->
+                        !number.isBlank()
+                )
+                .distinct()
+                .toList();
+    }
     /*
      * =================================================
      * LEXICAL ORIGINAL
@@ -325,14 +517,9 @@ public class LexicalSegmentSearcher
             String query) {
 
         List<String> lawNumbers =
-                LAW_PATTERN
-                        .matcher(query)
-                        .results()
-                        .map(match ->
-                                match.group(1)
-                        )
-                        .distinct()
-                        .toList();
+                extractLawNumbers(
+                        query
+                );
 
         if (lawNumbers.isEmpty()) {
             return escape(query);
@@ -360,7 +547,6 @@ public class LexicalSegmentSearcher
                 + " OR "
                 + escape(query);
     }
-
     /*
      * =================================================
      * ESCAPE
