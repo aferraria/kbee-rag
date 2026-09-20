@@ -12,8 +12,8 @@ public interface RerankerService {
             int topK
     );
     
-    Mono<List<ExpandedSource>> rerankFinal(
-            RerankRequest request,
-            int topK
-    );
+//    Mono<List<ExpandedSource>> rerankFinal(
+//            RerankRequest request,
+//            int topK
+//    );
 }

@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import kbee.rag.search.ThesaursService;
-import kbee.rag.search.ThesaurusCandidate;
+import kbee.rag.thesaurus.ThesaursService;
+import kbee.rag.thesaurus.ThesaurusCandidate;
 
 @SpringBootTest
 class ThesaursServiceVectorTest {

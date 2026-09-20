@@ -1,5 +1,6 @@
 package kbee.rag.search;
 public record DocumentAnalysisRequest(
 		String documentId,
-		String question) {
+		String question,
+		String llm) {
 }

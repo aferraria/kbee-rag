@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
-import kbee.rag.search.Concept;
+import kbee.rag.thesaurus.Concept;
 
 public record TextSegment(
         String documentId,

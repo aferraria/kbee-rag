@@ -70,12 +70,12 @@ public class LocalQwenRerankerService
                         .build();
     }
     
-    @Override
-    public Mono<List<ExpandedSource>> rerankFinal(
-            RerankRequest request,
-            int topK) {
-    	return Mono.empty();
-    }
+//    @Override
+//    public Mono<List<ExpandedSource>> rerankFinal(
+//            RerankRequestOld request,
+//            int topK) {
+//    	return Mono.empty();
+//    }
     
     @Override
     public Mono<List<ExpandedSource>> rerank(
@@ -83,7 +83,7 @@ public class LocalQwenRerankerService
             int topK) {
 
         List<ExpandedSource> candidates =
-                request.candidates();
+                request.sources();
 
         if (candidates == null
                 || candidates.isEmpty()) {

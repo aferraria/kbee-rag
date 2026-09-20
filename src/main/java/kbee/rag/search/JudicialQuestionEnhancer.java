@@ -3,7 +3,6 @@ package kbee.rag.search;
 import java.time.Duration;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import kbee.rag.audit.AuditPublisher;
@@ -20,22 +19,15 @@ public class JudicialQuestionEnhancer
 
     private final AuditPublisher auditPublisher;
 
-    private final String questionPromptName;
-
     public JudicialQuestionEnhancer(
             LegalTextEnhancer legalTextEnhancer,
-            AuditPublisher auditPublisher,
-            @Value("${rag.prompts.enrichment.question}")
-            String questionPromptName) {
+            AuditPublisher auditPublisher) {
 
         this.legalTextEnhancer =
                 legalTextEnhancer;
 
         this.auditPublisher =
                 auditPublisher;
-
-        this.questionPromptName =
-                questionPromptName;
     }
     
     @Override
@@ -82,8 +74,7 @@ public class JudicialQuestionEnhancer
 
         return legalTextEnhancer
                 .enhance(
-                        question,
-                        questionPromptName
+                        question
                 )
                 .map(enhancement ->
                         new EnhancedQuestion(
@@ -92,7 +83,7 @@ public class JudicialQuestionEnhancer
                                         || enhancement.text().isBlank()
                                                 ? null
                                                 : enhancement.text(),
-                                enhancement.concepts(),
+                                enhancement.voices(),
                                 enhancement.propositions()
                         )
                 );

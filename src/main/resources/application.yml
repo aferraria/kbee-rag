@@ -1,11 +1,15 @@
 server:
-  port: 8080
+  port: 8081
 
 logging:
   level:
     kbee.rag.search.ThesaursService: DEBUG
   
 spring:
+  security:
+    user:
+      name: admin
+      password: kbeerag
   mvc:
     async:
       request-timeout: 9000000  
@@ -78,20 +82,44 @@ segment-indexer:
   commit-every-documents: 50
 
 llm:
+  # Default provider used when the client does not send "llm" in the request.
+  # Available: ollama | openai | claude | openrouter
   provider: ollama
 
   ollama:
+    enabled: true
     base-url: http://localhost:11434
     model: qwen3.5:latest
     connection-timeout-ms: 90000
     request-timeout-ms: 9000000
 
   openai:
-    api-key: ${OPENAI_API_KEY}
+    enabled: true
+    api-key: ${OPENAI_API_KEY:}
     model: gpt-5.6
-    endpoint: https://api.openai.com/v1/responses
+    base-url: https://api.openai.com/v1
     connection-timeout-ms: 10000
     request-timeout-ms: 120000
+
+  claude:
+    enabled: false
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: claude-sonnet-4-5
+    base-url: https://api.anthropic.com/v1
+    max-tokens: 8192
+    connection-timeout-ms: 10000
+    request-timeout-ms: 300000
+
+  # Qwen via OpenRouter (or MindsHub: change base-url/model accordingly)
+  openrouter:
+    enabled: true
+    api-key: ${OPENROUTER_API_KEY:}
+    model: qwen/qwen3-235b-a22b
+    base-url: https://openrouter.ai/api/v1
+    referer: https://demo.kbee.io
+    title: KBEE RAG
+    connection-timeout-ms: 10000
+    request-timeout-ms: 300000
 
 llm-test:
   enabled: false

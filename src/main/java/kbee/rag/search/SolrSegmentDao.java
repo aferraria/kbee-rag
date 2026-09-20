@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import kbee.rag.segment.EmbeddedSegment;
 import kbee.rag.segment.TextSegment;
+import kbee.rag.thesaurus.Concept;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;

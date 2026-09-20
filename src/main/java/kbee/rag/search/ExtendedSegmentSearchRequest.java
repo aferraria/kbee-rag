@@ -2,6 +2,8 @@ package kbee.rag.search;
 
 import java.util.List;
 
+import kbee.rag.thesaurus.Concept;
+
 public class ExtendedSegmentSearchRequest
         extends SegmentSearchRequest {
 

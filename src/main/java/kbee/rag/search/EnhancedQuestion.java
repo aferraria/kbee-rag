@@ -2,6 +2,8 @@ package kbee.rag.search;
 
 import java.util.List;
 
+import kbee.rag.thesaurus.Concept;
+
 public record EnhancedQuestion(
         String text,
         String legalText,

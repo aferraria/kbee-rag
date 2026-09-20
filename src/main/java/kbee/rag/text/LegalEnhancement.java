@@ -2,7 +2,7 @@ package kbee.rag.text;
 
 import java.util.List;
 
-import kbee.rag.search.Concept;
+import kbee.rag.thesaurus.Concept;
 
 public record LegalEnhancement(
         String text,

@@ -1,18 +1,11 @@
 package kbee.rag;
 
-
-import java.time.OffsetDateTime;
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import kbee.rag.event.QuestionEnhancedEvent;
 import kbee.rag.search.EnhancedQuestion;
 import kbee.rag.search.QuestionEnhancer;
-import kbee.rag.segment.SegmentEnhancer;
-import kbee.rag.segment.TextSegment;
 
 @SpringBootTest
 class QuestionEnhancerTest {
@@ -87,6 +80,12 @@ Destaca que los honorarios en cuestión habían sido regulados mediante auto de 
                             System.out.println(
                                     embeddingText
                             );
+                        })
+                        .doOnError(error -> {
+                            System.err.println(
+                                    "ERROR: " + error.getMessage()
+                            );
+                            error.printStackTrace();
                         })
                         .block(); 
         

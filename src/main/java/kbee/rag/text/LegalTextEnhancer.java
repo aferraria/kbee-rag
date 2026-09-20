@@ -6,13 +6,11 @@ import reactor.core.publisher.Mono;
 
 public interface LegalTextEnhancer {
 
-    Mono<LegalEnhancement> enhance(
-            String text,
-            String promptName
+    Mono<TextEnhanced> enhance(
+            String text
     );
 
-    Mono<List<LegalEnhancement>> enhance(
-            List<String> texts,
-            String promptName
+    Mono<List<TextEnhanced>> enhance(
+            List<String> texts
     );
 }

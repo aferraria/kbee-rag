@@ -14,6 +14,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.springframework.stereotype.Component;
 
+import kbee.rag.thesaurus.Concept;
 import reactor.core.publisher.Flux;
 
 @Component("lexicalSegmentSearcher")

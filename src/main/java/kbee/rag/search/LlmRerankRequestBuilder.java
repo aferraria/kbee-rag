@@ -4,16 +4,16 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import kbee.rag.reranker.RerankRequest;
+import kbee.rag.reranker.RerankRequestOld;
 
 @Component
 public class LlmRerankRequestBuilder {
 
-    public RerankRequest build(
+    public RerankRequestOld build(
             String query,
             List<ExpandedSource> sources) {
 
-        return new RerankRequest(
+        return new RerankRequestOld(
                 buildInstructions(),
                 query,
                 sources

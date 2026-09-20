@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import kbee.rag.text.LegalEnhancement;
 import kbee.rag.text.LegalTextEnhancer;
+import kbee.rag.text.TextEnhanced;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -63,8 +64,7 @@ public class LegalSegmentEnhancer
 
         return legalTextEnhancer
                 .enhance(
-                        segment.text(),
-                        segmentPromptName
+                        segment.text()
                 )
                 .map(enhancement ->
                         applyEnhancement(
@@ -123,8 +123,7 @@ public class LegalSegmentEnhancer
 
             return legalTextEnhancer
                     .enhance(
-                            texts,
-                            segmentBatchPromptName
+                            texts
                     )
                     .map(enhancements -> {
 
@@ -175,8 +174,7 @@ public class LegalSegmentEnhancer
 
         return legalTextEnhancer
                 .enhance(
-                        texts,
-                        segmentPromptName
+                        texts
                 )
                 .map(enhancements -> {
 
@@ -237,7 +235,7 @@ public class LegalSegmentEnhancer
 
     private TextSegment applyEnhancement(
             TextSegment segment,
-            LegalEnhancement enhancement) {
+            TextEnhanced enhancement) {
 
         return new TextSegment(
                 segment.documentId(),
@@ -254,7 +252,7 @@ public class LegalSegmentEnhancer
                                 ? null
                                 : enhancement.text(),
                 segment.documentType(),
-                enhancement.concepts(),
+                enhancement.voices(),
                 enhancement.propositions(),
                 segment.metainfo()
         );

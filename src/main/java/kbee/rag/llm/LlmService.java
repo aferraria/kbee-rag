@@ -4,5 +4,7 @@ import reactor.core.publisher.Mono;
 
 public interface LlmService {
 
-    Mono<String> generate(LlmRequest request);
+    String providerId();
+
+    Mono<String> generate(LlmRequest<?> request);
 }

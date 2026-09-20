@@ -1,0 +1,206 @@
+Recibirás:
+
+1. un TEXTO JUDICIAL;
+2. una lista de TÉRMINOS candidatos de un tesauro.
+
+Debés realizar dos tareas independientes:
+
+A) seleccionar los TÉRMINOS respaldados por el TEXTO JUDICIAL;
+B) generar proposiciones jurídicas del TEXTO JUDICIAL.
+
+
+==================================================
+CONTEXTO JURISDICCIONAL DEL CORPUS
+==================================================
+
+Todos los textos provienen de fallos de la Provincia de Santa Fe.
+
+Por lo tanto, salvo que el TEXTO JUDICIAL indique expresamente otra
+jurisdicción, toda mención genérica a instituciones, tribunales,
+autoridades o lugares debe interpretarse como referida a la Provincia
+de Santa Fe.
+
+Ejemplos:
+
+- "esta Corte" o "la Corte" se interpreta como
+  "Corte Suprema de Justicia de la Provincia de Santa Fe";
+
+- "la Provincia" se interpreta como
+  "Provincia de Santa Fe";
+
+- una "Cámara de Apelación", si no se indica otra jurisdicción,
+  corresponde a una Cámara de Apelación de la Provincia de Santa Fe.
+
+Esta regla puede utilizarse únicamente para determinar la jurisdicción
+de una institución o lugar mencionado en el texto.
+
+No puede utilizarse para inferir procedimientos, competencias, normas,
+recursos, cargos, relaciones jerárquicas ni otros conceptos que no
+estén expresados en el TEXTO JUDICIAL.
+
+
+==================================================
+A) SELECCIÓN DE TÉRMINOS
+==================================================
+
+Por cada término recibido, responde esta pregunta:
+
+¿El concepto expresado por el término está representado
+de forma directa e inequívoca en la CONSULTA, sin necesidad
+de realizar ningún tipo de suposición?
+
+Si la respuesta es SÍ, incluye el término como seleccionado.
+
+Si la respuesta es NO, no lo selecciones.
+
+
+==================================================
+B) PROPOSICIONES JURÍDICAS
+==================================================
+
+Generá proposiciones jurídicas únicamente a partir del TEXTO JUDICIAL.
+
+No utilices los TÉRMINOS candidatos para generar, completar o ampliar
+las proposiciones.
+
+Las proposiciones deben poder generarse de la misma manera aunque la
+lista de TÉRMINOS no hubiera sido suministrada.
+
+
+CONTENIDO
+
+Extraé las reglas, criterios, requisitos, condiciones, conclusiones y
+relaciones jurídicas sustantivas expresadas en el TEXTO JUDICIAL.
+
+Priorizá las afirmaciones jurídicas adoptadas por el tribunal.
+
+Cada proposición debe expresar una afirmación autónoma, concreta y
+jurídicamente relevante.
+
+Podés reformular una afirmación para hacerla clara y autónoma,
+pero no amplíes ni alteres su contenido.
+
+Conservá la dirección de las relaciones expresadas en el texto.
+
+No intercambies causa, fundamento, objeto, condición o consecuencia.
+
+No agregues hechos, decisiones, requisitos, condiciones, causas,
+fundamentos, consecuencias ni relaciones que no estén expresados
+explícita o inequívocamente en el TEXTO JUDICIAL.
+
+No completes sujetos, tribunales, normas, procedimientos, efectos,
+consecuencias ni calificaciones jurídicas que no estén expresados
+en el TEXTO JUDICIAL.
+
+Si una afirmación requiere inferencia o conocimiento externo para
+formularse, no la generes.
+
+
+RELEVANCIA
+
+Omití información meramente accesoria que no contribuya a representar
+el contenido jurídico sustantivo del TEXTO JUDICIAL.
+
+Omití hechos, antecedentes procesales y referencias a precedentes cuando
+no sean necesarios para expresar una regla, criterio, requisito,
+condición o conclusión jurídica.
+
+No generes una proposición únicamente para indicar que un precedente
+fue citado, aplicado o considerado análogo.
+
+Si el TEXTO JUDICIAL reproduce o adopta una regla jurídica proveniente
+de un precedente, extraé la regla jurídica y no la mera referencia
+al precedente.
+
+
+PRECISIÓN Y NO REDUNDANCIA
+
+Cada proposición debe representar una idea jurídica diferente.
+
+No generes varias paráfrasis de la misma regla, criterio o conclusión.
+
+Cuando distintas partes del TEXTO JUDICIAL expresen sustancialmente
+la misma regla jurídica, conservala en una sola proposición.
+
+Generá el menor número de proposiciones necesario para representar
+el contenido jurídico sustantivo del TEXTO JUDICIAL.
+
+Generá como máximo 5 proposiciones.
+
+Si tenés dudas acerca de si una afirmación está contenida en el
+TEXTO JUDICIAL, no la agregues.
+
+
+==================================================
+REGLAS ESTRICTAS
+==================================================
+
+- No uses conocimiento jurídico externo.
+- No agregues información ausente del TEXTO JUDICIAL.
+- No inventes TÉRMINOS.
+- No inventes hechos ni soluciones jurídicas.
+- No selecciones TÉRMINOS por mera asociación temática.
+- No selecciones una especialización no expresada.
+- Conservá exactamente el texto de cada TÉRMINO seleccionado.
+- La selección de TÉRMINOS y la generación de PROPOSICIONES son
+  tareas independientes.
+
+
+==================================================
+FORMATO OBLIGATORIO
+==================================================
+
+Respondé por TODOS los segmentos recibidos.
+
+"voices" es una lista de selección, no una lista de evaluación.
+
+Para cada segmento, incluí en "voices" únicamente las VOCES seleccionadas
+de la lista de candidatos correspondiente a ese segmento.
+
+Las VOCES no seleccionadas deben omitirse completamente.
+
+No generes un objeto JSON por cada VOZ candidata.
+No incluyas evaluaciones negativas, descartes, justificaciones,
+"true" ni "false".
+
+Respondé única y exclusivamente con un objeto JSON válido que siga
+estrictamente esta estructura:
+
+{
+  "segments": [
+    {
+      "id": 1,
+      "voices": [
+        "Nombre exacto de la VOZ 1",
+        "Nombre exacto de la VOZ 2"
+      ],
+      "propositions": [
+        "Proposición jurídica 1",
+        "Proposición jurídica 2"
+      ]
+    },
+    {
+      "id": 2,
+      "voices": [],
+      "propositions": []
+    }
+  ]
+}
+
+Para cada segmento:
+
+- Conservá exactamente el ID recibido.
+- Cada VOZ candidata puede aparecer como máximo una vez en "voices".
+- No repitas una VOZ.
+- No incluyas en "voices" ninguna VOZ que no pertenezca exactamente
+  a la lista de candidatos de ese segmento.
+- La cantidad de elementos de "voices" nunca puede superar la cantidad
+  de VOCES candidatas recibidas para ese segmento.
+- Cada elemento de "propositions" debe derivarse exclusivamente del
+  TEXTO JUDICIAL del mismo segmento.
+
+La salida debe contener exactamente un resultado por cada ID recibido.
+
+No omitas segmentos aunque "voices" o "propositions" estén vacíos.
+
+No agregues texto antes ni después del JSON.

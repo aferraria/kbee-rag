@@ -1,7 +1,7 @@
 package kbee.rag;
 
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.OffsetDateTime;
@@ -18,6 +18,7 @@ import kbee.rag.segment.SegmentEnhancer;
 import kbee.rag.segment.TextSegment;
 import kbee.rag.text.LegalEnhancement;
 import kbee.rag.text.LegalTextEnhancer;
+import kbee.rag.text.TextEnhanced;
 
 @SpringBootTest
 class TextEnhancerTest {
@@ -186,6 +187,12 @@ artículo 1, incisos 2 y 3, de la ley 7055.
                                         segment
                                 )
                         )
+                        .doOnError(error -> {
+                            System.err.println(
+                                    "ERROR: " + error.getMessage()
+                            );
+                            error.printStackTrace();
+                        })
                         .block();
 
         long batchEnd =
@@ -251,85 +258,61 @@ artículo 1, incisos 2 y 3, de la ley 7055.
     }
     
  // @Test
+//    @Test
     void shouldEnhanceFourSegmentsIndependently() {
-    	
-    	List<String> texts = List.of(
 
-    	        """
-    	        T. 2025, SENTENCIA NRO. 450
+        List<String> texts1 = List.of(
+                """
+                T. 2025, SENTENCIA NRO. 450
 
-    	        Provincia de Santa Fe, 29 de julio del año 2025.
-    	        """,
+                Provincia de Santa Fe, 29 de julio del año 2025.
+                """,
 
-    	        """
-    	        La queja por denegación del recurso de inconstitucionalidad interpuesto
-    	        por el abogado Norberto Francisco José Berlanga contra el auto número
-    	        233 de fecha 15 de octubre de 2024, dictado por la Sala Primera
-    	        -integrada- de la Cámara de Apelación en lo Civil y Comercial de la
-    	        ciudad de Santa Fe, en autos "VERONESE, CLAUDIA contra RECORD
-    	        PUBLICISTAS S.R.L. Y OTROS -INCID DE INOP DE INSC BIEN FAM
-    	        (CUIJ 21-00834525-9)" (Expte. C.S.J. CUIJ Nº: 21-00516437-8); y,
-    	        """,
+                """
+                La queja por denegación del recurso de inconstitucionalidad interpuesto
+                por el abogado Norberto Francisco José Berlanga contra el auto número
+                233 de fecha 15 de octubre de 2024, dictado por la Sala Primera
+                -integrada- de la Cámara de Apelación en lo Civil y Comercial de la
+                ciudad de Santa Fe, en autos "VERONESE, CLAUDIA contra RECORD
+                PUBLICISTAS S.R.L. Y OTROS -INCID DE INOP DE INSC BIEN FAM
+                (CUIJ 21-00834525-9)" (Expte. C.S.J. CUIJ Nº: 21-00516437-8); y,
+                """,
 
-    	        """
-    	        Mediante resolución 233 del 15 de octubre de 2024, la Sala Primera
-    	        integrada de la Cámara de Apelación en lo Civil y Comercial de Santa Fe
-    	        rechazó el recurso de reposición deducido por el doctor Berlanga contra
-    	        la providencia de fecha 06.08.2024 dictada por el Vocal de trámite
-    	        -quien, a su turno, había desestimado la petición del letrado orientada
-    	        al reajuste de los honorarios regulados por la actuación profesional
-    	        desarrollada en la segunda instancia de un incidente concursal-.
+                """
+                Mediante resolución 233 del 15 de octubre de 2024, la Sala Primera
+                integrada de la Cámara de Apelación en lo Civil y Comercial de Santa Fe
+                rechazó el recurso de reposición deducido por el doctor Berlanga contra
+                la providencia de fecha 06.08.2024 dictada por el Vocal de trámite
+                -quien, a su turno, había desestimado la petición del letrado orientada
+                al reajuste de los honorarios regulados por la actuación profesional
+                desarrollada en la segunda instancia de un incidente concursal-.
 
-    	        Contra tal pronunciamiento interpone el curial recurso de
-    	        inconstitucionalidad, con invocación de las causales previstas en el
-    	        artículo 1 -incisos 2° y 3°- de la ley 7055, tachándolo de arbitrario,
-    	        contrario a la Constitución y a la ley arancelaria, y carente de
-    	        motivación suficiente.
+                Contra tal pronunciamiento interpone el curial recurso de
+                inconstitucionalidad, con invocación de las causales previstas en el
+                artículo 1 -incisos 2° y 3°- de la ley 7055, tachándolo de arbitrario,
+                contrario a la Constitución y a la ley arancelaria, y carente de
+                motivación suficiente.
+                """,
 
-    	        En fundamentación del recurso impetrado, reseña que los presentes se
-    	        originaron a partir de su solicitud, formulada ante el Tribunal de
-    	        Alzada, orientada al reajuste de los honorarios regulados por su labor
-    	        profesional desplegada en el marco de un incidente concursal en segunda
-    	        instancia, el cual tenía por objeto -recuerda- la declaración de
-    	        inoponibilidad de la inscripción como bien de familia de un inmueble de
-    	        la fallida, en orden a posibilitar su ulterior subasta en el trámite de
-    	        quiebra liquidativa; remarca que aquella petición se sustentaba en lo
-    	        establecido en los artículos 8, inciso h), y 32 de la ley 6737
-    	        -y sus modificatorias-.
-    	        """,
+                """
+                Destaca que los honorarios en cuestión habían sido regulados mediante
+                auto de fecha 19.08.2008 en 30,83 jus, equivalentes en aquel entonces a
+                $4.523,08, determinándose el interés moratorio a una tasa del 12% anual;
+                entiende que la denegación del reajuste peticionado prescinde del actual
+                contexto inflacionario.
 
-    	        """
-    	        Destaca que los honorarios en cuestión habían sido regulados mediante
-    	        auto de fecha 19.08.2008 en 30,83 jus, equivalentes en aquel entonces a
-    	        $4.523,08, determinándose el interés moratorio a una tasa del 12% anual;
-    	        entiende que la denegación del reajuste peticionado prescinde del actual
-    	        contexto inflacionario, a la vez que se aparta de lo normado en la ley
-    	        arancelaria acerca del valor actualizado del jus, careciendo asimismo
-    	        de toda conexión con el precio de subasta del inmueble involucrado en
-    	        el proceso incidental de marras; todo ello -prosigue- con grave
-    	        afectación de sus derechos fundamentales de propiedad y justa
-    	        retribución, proporcional al esfuerzo desplegado y a los intereses
-    	        económicos comprometidos.
-
-    	        Alega que la decisión recurrida carece de motivación adecuada, tanto en
-    	        punto al planteo de inconstitucionalidad de las normas que prohíben la
-    	        actualización o indexación de deudas dinerarias, como en relación a la
-    	        postulación acerca de la naturaleza del crédito por honorarios como
-    	        obligación de valor y, asimismo, respecto de la aplicabilidad del
-    	        artículo 8, inciso h), de la ley 6767, al igual que en torno al
-    	        mantenimiento de la misma tasa de interés.
-    	        """
-    	);
-    	
+                Alega que la decisión recurrida carece de motivación adecuada, tanto en
+                punto al planteo de inconstitucionalidad de las normas que prohíben la
+                actualización o indexación de deudas dinerarias, como en relación a la
+                naturaleza del crédito por honorarios como obligación de valor.
+                """
+        );
 
         List<String> texts2 = List.of(
-
-                // ID 1
                 """
                 La presente queja habrá de prosperar parcialmente.
                 """,
 
-                // ID 2
                 """
                 Liminarmente corresponde señalar que si bien el presentante dice
                 encuadrar su impugnación en los incisos 2° y 3° del artículo 1
@@ -339,8 +322,7 @@ artículo 1, incisos 2 y 3, de la ley 7055.
                 a la alegada arbitrariedad del fallo de la Sala y su supuesta
                 incompatibilidad con los derechos y garantías fundamentales que
                 se afirman vulnerados, resultando por tanto subsumibles en la
-                hipótesis prevista en el inciso 3° de la norma citada, bajo cuya
-                óptica corresponde que sean analizados.
+                hipótesis prevista en el inciso 3° de la norma citada.
 
                 A su vez, debe recordarse que el memorial del recurso de
                 inconstitucionalidad no es susceptible de ser mejorado ni ampliado
@@ -348,7 +330,6 @@ artículo 1, incisos 2 y 3, de la ley 7055.
                 auto denegatorio.
                 """,
 
-                // ID 3
                 """
                 Sentado lo anterior, es posible advertir que la mayoría de las
                 causales de descalificación propuestas en el memorial recursivo,
@@ -362,7 +343,6 @@ artículo 1, incisos 2 y 3, de la ley 7055.
                 de los jueces de la causa.
                 """,
 
-                // ID 4
                 """
                 En efecto, en lo tocante al achaque de falta de fundamentación
                 enderezado contra la denegación del reajuste de honorarios
@@ -382,39 +362,49 @@ artículo 1, incisos 2 y 3, de la ley 7055.
                 """
         );
 
-        List<LegalEnhancement> result =
+        testBatch("ANTECEDENTES", texts1);
+        testBatch("DECISION", texts2);
+    }
+
+    private void testBatch(
+            String name,
+            List<String> texts) {
+
+        List<TextEnhanced> result =
                 legalTextEnhancer
                         .enhance(
-                                texts2,
-                                "segment-batch-enrichment"
+                                texts
                         )
                         .block();
 
         assertNotNull(result);
-        assertEquals(4, result.size());
-
-        result.forEach(enhancement -> {
-            assertNotNull(enhancement);
-            assertNotNull(enhancement.concepts());
-            assertNotNull(enhancement.propositions());
-        });
+        assertEquals(
+                texts.size(),
+                result.size()
+        );
 
         System.out.println();
-        System.out.println("===== BATCH RESULT =====");
+        System.out.println(
+                "========== " + name + " =========="
+        );
 
         for (int i = 0; i < result.size(); i++) {
 
-            LegalEnhancement enhancement =
+            TextEnhanced enhancement =
                     result.get(i);
+
+            assertNotNull(enhancement);
+            assertNotNull(enhancement.voices());
+            assertNotNull(enhancement.propositions());
 
             System.out.println();
             System.out.println(
                     "===== SEGMENT " + (i + 1) + " ====="
             );
 
-            System.out.println("Concepts:");
+            System.out.println("Voices:");
 
-            enhancement.concepts()
+            enhancement.voices()
                     .forEach(System.out::println);
 
             System.out.println("Propositions:");

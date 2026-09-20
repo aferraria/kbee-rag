@@ -1,0 +1,10 @@
+                Determina si el TEXTO realiza una interpretación jurídica
+                de una ley o de una disposición legal mencionada en él.
+
+                Existe interpretación cuando el texto determina, analiza
+                o discute el sentido, alcance o aplicabilidad de la norma.
+
+                La mera cita, mención o invocación de una ley o artículo
+                no constituye interpretación.
+
+                Responde únicamente true o false.

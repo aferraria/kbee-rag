@@ -2,9 +2,19 @@ package kbee.rag.llm;
 
 import java.util.Map;
 
-public record LlmRequest(
-        String instructions,
-        String input,
-        Map<String, Object> format
-) {
+import reactor.core.publisher.Mono;
+
+public interface LlmRequest<T> {
+
+    String instructions();
+
+    String input();
+
+    Mono<T> execute();
+    
+    Map<String, Object> format();
+    
+    default String reasoningEffort() {
+        return null;
+    }
 }

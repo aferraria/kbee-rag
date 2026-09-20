@@ -1,5 +1,6 @@
 package kbee.rag.audit;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -55,5 +56,19 @@ public record AuditRecord(
                 metadata == null
                         ? Map.of()
                         : Map.copyOf(metadata);
+    }
+    
+    public long totalMillis() {
+
+        if (startedAt == null
+                || finishedAt == null) {
+
+            return 0L;
+        }
+
+        return Duration.between(
+                startedAt,
+                finishedAt
+        ).toMillis();
     }
 }
