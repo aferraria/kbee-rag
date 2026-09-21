@@ -5,12 +5,18 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import kbee.rag.config.InstructionProvider;
+import kbee.rag.llm.LlmBatchEnrichmentRequest;
 import kbee.rag.llm.LlmEnrichmentRequest;
+import kbee.rag.llm.LlmLawInterpretationRequest;
 import kbee.rag.llm.LlmRequest;
 import kbee.rag.llm.LlmRequestBuilder;
+import kbee.rag.llm.LlmResponseRequest;
 import kbee.rag.llm.LlmService;
 import kbee.rag.llm.ProviderLlmRequestFactory;
+import kbee.rag.qwen.QwenBatchEnrichmentRequest;
 import kbee.rag.qwen.QwenEnrichmentRequest;
+import kbee.rag.qwen.QwenLawInterpretationRequest;
+import kbee.rag.qwen.QwenRagResponseRequest;
 
 @Component
 public class OpenAiLlmRequestFactory
@@ -46,6 +52,51 @@ public class OpenAiLlmRequestFactory
 
             return (LlmRequestBuilder<T>)
                     QwenEnrichmentRequest
+                            .builder()
+                            .instructionProvider(
+                                    instructionProvider
+                            )
+                            .llm(
+                                    llmService
+                            )
+                            .objectMapper(
+                                    objectMapper
+                            );
+        }
+        
+        if (LlmBatchEnrichmentRequest.class.equals(requestType)) {
+
+            return (LlmRequestBuilder<T>)
+                    QwenBatchEnrichmentRequest
+                            .builder()
+                            .instructionProvider(
+                                    instructionProvider
+                            )
+                            .llm(
+                                    llmService
+                            )
+                            .objectMapper(
+                                    objectMapper
+                            );
+        }
+        
+        if (LlmLawInterpretationRequest.class.equals(requestType)) {
+
+            return (LlmRequestBuilder<T>)
+                    QwenLawInterpretationRequest
+                            .builder()
+                            .instructionProvider(
+                                    instructionProvider
+                            )
+                            .llm(
+                                    llmService
+                            );
+        }
+        
+        if (LlmResponseRequest.class.equals(requestType)) {
+
+            return (LlmRequestBuilder<T>)
+                    QwenRagResponseRequest
                             .builder()
                             .instructionProvider(
                                     instructionProvider

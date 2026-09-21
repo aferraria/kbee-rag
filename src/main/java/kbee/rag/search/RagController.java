@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import kbee.rag.KbeeRagApplication;
 import kbee.rag.audit.Logger;
 import reactor.core.publisher.Mono;
 
@@ -31,18 +30,38 @@ public class RagController {
 //	}
 
 	@PostMapping("/answer")
-	public Mono<RagResponse> rerank(@RequestBody RagRequest request) {
-	 logger.debug("/answer" + request.toString());
-	 
-	 long startTime = System.currentTimeMillis();
-	 Mono<RagResponse>  r = ragService.answer(request);
-	 logger.debug("round trip time for /answer: " + (System.currentTimeMillis() - startTime) + " ms");
-	 logger.debug( "Total -> " + r.map(response -> response.sources().size()));
-	 
-	 return r;
-	 
-	}
+	public Mono<RagResponse> answer(
+	        @RequestBody RagRequest request) {
 
+	    System.out.println(
+	            ">>> CONTROLLER /answer: " + request
+	    );
+
+	    return ragService
+	            .answer(request)
+	            .doOnSubscribe(subscription ->
+	                    System.out.println(
+	                            ">>> RAG SUBSCRIBED"
+	                    )
+	            )
+	            .doOnNext(response ->
+	                    System.out.println(
+	                            ">>> RAG RESPONSE"
+	                    )
+	            )
+	            .doOnError(error -> {
+	                System.err.println(
+	                        ">>> RAG ERROR: "
+	                                + error.getMessage()
+	                );
+	                error.printStackTrace();
+	            })
+	            .doFinally(signal ->
+	                    System.out.println(
+	                            ">>> RAG FINALLY: " + signal
+	                    )
+	            );
+	}
 
 	@PostMapping("/document-analysis")
 	public Mono<DocumentAnalysisResponse> analyzeDocument(@RequestBody DocumentAnalysisRequest request) {

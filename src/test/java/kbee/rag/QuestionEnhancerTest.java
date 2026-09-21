@@ -68,8 +68,14 @@ Destaca que los honorarios en cuestión habían sido regulados mediante auto de 
 
 """;
 
+        String q9 =
+
+        		"""
+        Posibilidad de la víctima de promover la acción sin intervención del ministerio fiscal      
+
+""";
         
-        String question = q7 		;
+        String question = q9 		;
         
         long start = System.currentTimeMillis();
         

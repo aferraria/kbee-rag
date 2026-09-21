@@ -10,6 +10,7 @@ import kbee.rag.llm.LlmEnrichmentRequest;
 import kbee.rag.llm.LlmLawInterpretationRequest;
 import kbee.rag.llm.LlmRequest;
 import kbee.rag.llm.LlmRequestBuilder;
+import kbee.rag.llm.LlmResponseRequest;
 import kbee.rag.llm.LlmService;
 import kbee.rag.llm.ProviderLlmRequestFactory;
 import kbee.rag.ollama.OllamaLlmService;
@@ -86,6 +87,22 @@ public class QwenLlmRequestFactory
                             )
                             .llm(
                                     llmService
+                            );
+        }
+        
+        if (LlmResponseRequest.class.equals(requestType)) {
+
+            return (LlmRequestBuilder<T>)
+                    QwenRagResponseRequest
+                            .builder()
+                            .instructionProvider(
+                                    instructionProvider
+                            )
+                            .llm(
+                                    llmService
+                            )
+                            .objectMapper(
+                                    objectMapper
                             );
         }
 

@@ -3,7 +3,7 @@ server:
 
 logging:
   level:
-    kbee.rag.search.ThesaursService: DEBUG
+    kbee.rag.thesaurus.ThesaursService: DEBUG
   
 spring:
   security:
@@ -84,7 +84,7 @@ segment-indexer:
 llm:
   # Default provider used when the client does not send "llm" in the request.
   # Available: ollama | openai | claude | openrouter
-  provider: ollama
+  provider: openai
 
   ollama:
     enabled: true

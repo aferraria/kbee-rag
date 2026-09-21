@@ -3,21 +3,29 @@ package kbee.rag.qwen;
 import java.util.List;
 import java.util.Map;
 
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import kbee.rag.config.InstructionProvider;
 import kbee.rag.llm.LlmRequestBuilder;
+import kbee.rag.llm.LlmResponseRequest;
 import kbee.rag.llm.LlmService;
 import kbee.rag.ollama.OllamaLlmRequest;
 import kbee.rag.search.ExpandedSource;
 import kbee.rag.search.RagResponse;
 import kbee.rag.search.SegmentSearchResult;
+import kbee.rag.search.Source;
 import reactor.core.publisher.Mono;
 
 public class QwenRagResponseRequest
-        implements OllamaLlmRequest<RagResponse> {
+        implements OllamaLlmRequest<RagResponse>,
+        LlmResponseRequest {
 
     private final String question;
 
     private final LlmService llm;
+    
+    private final ObjectMapper objectMapper;
 
     private final InstructionProvider instructionProvider;
 
@@ -26,6 +34,7 @@ public class QwenRagResponseRequest
     private QwenRagResponseRequest(
             LlmService llm,
             InstructionProvider instructionProvider,
+            ObjectMapper objectMapper,
             String question,
             List<ExpandedSource> sources) {
 
@@ -37,6 +46,9 @@ public class QwenRagResponseRequest
 
         this.question =
                 question;
+        
+        this.objectMapper =
+        		objectMapper;
 
         this.sources =
                 sources == null
@@ -74,26 +86,56 @@ public class QwenRagResponseRequest
         return buildInput();
     }
 
-    @Override
-    public Map<String, Object> format() {
+    	@Override
+    	public Map<String, Object> format() {
 
-        return null;
-    }
+    	    return Map.of(
+    	            "type", "object",
+    	            "properties", Map.of(
+    	                    "ranking", Map.of(
+    	                            "type", "array",
+    	                            "items", Map.of(
+    	                                    "type", "object",
+    	                                    "properties", Map.of(
+    	                                            "index", Map.of(
+    	                                                    "type", "integer"
+    	                                            )
+    	                                    ),
+    	                                    "required", List.of(
+    	                                            "index"
+    	                                    )
+    	                            )
+    	                    )
+    	            ),
+    	            "required", List.of(
+    	                    "ranking"
+    	            )
+    	    );
+    	}
 
 
 
-    @Override
-    public Mono<RagResponse> execute() {
+    	@Override
+    	public Mono<RagResponse> execute() {
 
-        return llm.generate(this)
-                .map(answer ->
-                        new RagResponse(
-                                question,
-                                answer,
-                                sources
-                        )
-                );
-    }
+    	    return llm.generate(this)
+    	            .map(answer -> {
+
+    	                List<ExpandedSource> selectedSources =
+    	                        parseResponse(answer);
+
+    	                List<Source> responseSources =
+    	                        selectedSources.stream()
+    	                                .map(this::toSource)
+    	                                .toList();
+
+    	                return new RagResponse(
+    	                        question,
+    	                        answer,
+    	                        responseSources
+    	                );
+    	            });
+    	}
 
     private String buildInput() {
 
@@ -202,7 +244,56 @@ public class QwenRagResponseRequest
             }
         }
     }
+    
+    private Source toSource(
+            ExpandedSource source) {
 
+        SegmentSearchResult selected =
+                source.selected();
+
+        return new Source(
+                selected.documentId(),
+                selected.documentTitle(),
+                selected.documentDate(),
+                (float) selected.score()
+        );
+    }
+
+    
+    private List<ExpandedSource> parseResponse(
+            String response) {
+
+        try {
+
+            QwenRerankResponse parsed =
+                    objectMapper.readValue(
+                            response,
+                            QwenRerankResponse.class
+                    );
+
+            if (parsed.ranking() == null) {
+                return List.of();
+            }
+
+            return parsed.ranking()
+                    .stream()
+                    .map(QwenRerankItem::index)
+                    .filter(index ->
+                            index >= 0
+                            && index < sources.size()
+                    )
+                    .map(sources::get)
+                    .toList();
+
+        } catch (Exception e) {
+
+            throw new IllegalStateException(
+                    "Respuesta inválida del LLM reranker: "
+                            + response,
+                    e
+            );
+        }
+    }
 
     
 		    public static class Builder
@@ -211,6 +302,9 @@ public class QwenRagResponseRequest
 		private InstructionProvider instructionProvider;
 		
 		private String question;
+		
+        private ObjectMapper objectMapper;
+
 		
 		private LlmService llm;
 		
@@ -224,6 +318,15 @@ public class QwenRagResponseRequest
 		
 		    return this;
 		}
+		
+        public Builder objectMapper(
+                ObjectMapper objectMapper) {
+
+            this.objectMapper =
+                    objectMapper;
+
+            return this;
+        }
 		
 		@Override
 		public Builder input(
@@ -273,9 +376,19 @@ public class QwenRagResponseRequest
 		    return new QwenRagResponseRequest(
 		            llm,
 		            instructionProvider,
+		            objectMapper,
 		            question,
 		            sources
 		    );
 		}
 		}
+		    
+		    public record QwenRerankItem(
+		            int index
+		    ) {
+		    }
+		    public record QwenRerankResponse(
+		            List<QwenRerankItem> ranking
+		    ) {
+		    }
 }

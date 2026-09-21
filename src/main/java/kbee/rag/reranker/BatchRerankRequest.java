@@ -249,62 +249,72 @@ public class BatchRerankRequest
     }
     
 
-		public static RerankRequestBuilder builder() {
+    public static Builder builder() {
 		
 		    return new Builder();
 		}
 		
-		public static class Builder
-		        implements RerankRequestBuilder {
-		
-		    private String question;
-		
-		    private List<ExpandedSource> sources;
-		
-		    private int topK;
-		
-		    @Override
-		    public RerankRequestBuilder question(
-		            String question) {
-		
-		        this.question = question;
-		
-		        return this;
-		    }
-		
-		    @Override
-		    public RerankRequestBuilder sources(
-		            List<ExpandedSource> sources) {
-		
-		        this.sources = sources;
-		
-		        return this;
-		    }
-		
-		    @Override
-		    public RerankRequestBuilder topK(
-		            int topK) {
-		
-		        this.topK = topK;
-		
-		        return this;
-		    }
-		
-		    @Override
-		    public RerankRequest build() {
-		
-		        BatchRerankRequest request =
-		                new BatchRerankRequest();
-		
-		        request.question = question;
-		        request.sources = sources;
-		        request.topK = topK;
-		
-		        return request;
-		    }
-		}
-
-    
+					public static class Builder
+			        implements RerankRequestBuilder {
+			
+			    private String question;
+			    private List<ExpandedSource> sources;
+			    private int topK;
+			    private int batchSize;
+			
+			    @Override
+			    public RerankRequestBuilder question(
+			            String question) {
+			
+			        this.question = question;
+			        return this;
+			    }
+			
+			    @Override
+			    public RerankRequestBuilder sources(
+			            List<ExpandedSource> sources) {
+			
+			        this.sources = sources;
+			        return this;
+			    }
+			
+			    @Override
+			    public RerankRequestBuilder topK(
+			            int topK) {
+			
+			        this.topK = topK;
+			        return this;
+			    }
+			
+			    public Builder batchSize(
+			            int batchSize) {
+			
+			        this.batchSize = batchSize;
+			        return this;
+			    }
+			
+			    @Override
+			    public RerankRequest build() {
+			
+			        if (batchSize <= 0) {
+			            throw new IllegalArgumentException(
+			                    "batchSize debe ser > 0: "
+			                            + batchSize
+			            );
+			        }
+			
+			        BatchRerankRequest request =
+			                new BatchRerankRequest();
+			
+			        request.question = question;
+			        request.sources = sources;
+			        request.topK = topK;
+			        request.batchSize = batchSize;
+			
+			        return request;
+			    }
+			}
+			    
     private record IndexedSource(
             int index,
             ExpandedSource source

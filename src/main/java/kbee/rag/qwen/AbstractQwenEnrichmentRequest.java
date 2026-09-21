@@ -17,7 +17,6 @@ import kbee.rag.thesaurus.Concept;
 import java.util.List;
 import java.util.Objects;
 
-import kbee.rag.thesaurus.Concept;
 
 public abstract class AbstractQwenEnrichmentRequest<T>
         implements OllamaLlmRequest<T> {
