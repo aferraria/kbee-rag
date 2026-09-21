@@ -43,7 +43,7 @@ Precedente sobre si la Corte Suprema puede revisar una sentencia que atribuye ne
         
         String q4 =
                 """
-		La presente queja habrá de prosperar parcialmente.
+Puede la víctima iniciar o impulsar la persecución penal sin intervención del fiscal
                 """;
         
         String q5 =
@@ -75,7 +75,7 @@ Destaca que los honorarios en cuestión habían sido regulados mediante auto de 
 
 """;
         
-        String question = q9 		;
+        String question = q4		;
         
         long start = System.currentTimeMillis();
         

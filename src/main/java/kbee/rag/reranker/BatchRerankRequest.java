@@ -8,6 +8,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import kbee.rag.search.ExpandedSource;
 import kbee.rag.search.SegmentSearchResult;
 import reactor.core.publisher.Flux;
@@ -16,6 +19,10 @@ import reactor.core.publisher.Mono;
 public class BatchRerankRequest
         implements RerankRequest {
 
+	
+    private static final Logger log =
+            LoggerFactory.getLogger(RerankRequest.class);
+    
     private String question;
 
     private List<ExpandedSource> sources;
@@ -117,21 +124,14 @@ public class BatchRerankRequest
         )
         .map(reranked -> {
 
-            System.out.println();
-            System.out.println(
+            log.debug(
                     "===== RERANK BATCH FINALISTS ====="
             );
 
             if (reranked == null
                     || reranked.isEmpty()) {
 
-                System.out.printf(
-                        "KEEP 0 / %d | DROP %d%n",
-                        batch.size(),
-                        batch.size()
-                );
-
-                System.out.println(
+                log.debug(
                         "=================================="
                 );
 
@@ -173,9 +173,9 @@ public class BatchRerankRequest
                                 source
                         )
                 );
-
-                System.out.printf(
-                        "KEEP | score=%.2f | global=%2d | %s | %s%n",
+                
+                log.debug(
+                        "KEEP | score={} | global={} | {} | {}",
                         score,
                         indexed.index(),
                         selected.documentId(),
@@ -183,14 +183,7 @@ public class BatchRerankRequest
                 );
             }
 
-            System.out.printf(
-                    "KEEP %d / %d | DROP %d%n",
-                    finalists.size(),
-                    batch.size(),
-                    batch.size() - finalists.size()
-            );
-
-            System.out.println(
+            log.debug(
                     "=================================="
             );
 

@@ -3,8 +3,9 @@ server:
 
 logging:
   level:
-    kbee.rag.thesaurus.ThesaursService: DEBUG
-  
+    kbee.rag.thesaurus.ThesaursService: ERROR
+    kbee.rag.reranker.RerankRequest: DEBUG
+
 spring:
   security:
     user:
@@ -15,14 +16,16 @@ spring:
       request-timeout: 9000000  
 solr:
   source:
-    base-url: http://localhost:8087/solr
+    # base-url: http://localhost:8087/solr
+    base-url: https://solr10.kbee.io/solr
     core: aacontent
     # Basic auth (leave username empty to disable authentication)
     username: ${SOLR_SOURCE_USERNAME:}
     password: ${SOLR_SOURCE_PASSWORD:}
  
   target:
-    base-url: http://localhost:8983/solr
+    #base-url: http://localhost:8983/solr
+    base-url: https://solr10.kbee.io/solr
     core: kbee_segments
     # Basic auth (leave username empty to disable authentication)
     username: ${SOLR_TARGET_USERNAME:}
@@ -90,7 +93,7 @@ segment-indexer:
 llm:
   # Default provider used when the client does not send "llm" in the request.
   # Available: ollama | openai | claude | openrouter
-  provider: openai
+  provider: ollama
 
   ollama:
     enabled: true
@@ -133,14 +136,12 @@ llm-test:
 reranker:
     provider: openrouter
     enabled: true
-  	
     local:
        base-url: http://localhost:8091
        connection-timeout-ms: 5000
        request-timeout-ms: 9000000
        candidate-count: 50
        top-k: 5
-  	     
     openrouter:
       base-url: https://openrouter.ai/api/v1
       api-key: ${OPENROUTER_API_KEY}

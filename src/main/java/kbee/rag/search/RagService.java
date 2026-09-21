@@ -16,8 +16,8 @@ import kbee.rag.document.DocumentText;
 import kbee.rag.llm.LlmResponseRequest;
 import kbee.rag.llm.LlmAnalysisRequest;
 import kbee.rag.llm.LlmRequestFactory;
-import kbee.rag.reranker.LocalQwenRerankerService;
 import kbee.rag.reranker.RerankRequestBuilderFactory;
+import kbee.rag.reranker.RerankerService;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -34,7 +34,7 @@ public class RagService {
     
     private final LlmRequestFactory llmRequestFactory;
 
-    private final LocalQwenRerankerService rerankerService;
+    private final RerankerService rerankerService;
 
     private final FilterQueryBuilder filterBuilder;
 
@@ -42,7 +42,7 @@ public class RagService {
             SegmentSearchService segmentSearchService,
             DocumentDao documentDao,
             RerankRequestBuilderFactory rerankRequestFactory,
-            LocalQwenRerankerService rerankerService,
+            RerankerService rerankerService,
             LlmRequestFactory llmRequestFactory,
             FilterQueryBuilder filterBuilder,
             InstructionProvider instructionProvider) {

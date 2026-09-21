@@ -34,9 +34,18 @@ public class VectorSegmentSearcher
     @Override
     public Flux<SegmentSearchResult> search(
             SegmentSearchRequest request) {
+    	
+    	
+    	
 
         ExtendedSegmentSearchRequest extended =
                 (ExtendedSegmentSearchRequest) request;
+        
+        String legalQuery =
+                extended.extendedQuery() == null
+                        || extended.extendedQuery().isBlank()
+                        ? extended.query()
+                        : extended.extendedQuery();
 
         Mono<List<Float>> originalEmbedding =
                 embeddingService.embedReactive(
@@ -45,8 +54,18 @@ public class VectorSegmentSearcher
 
         Mono<List<Float>> extendedEmbedding =
                 embeddingService.embedReactive(
-                        extended.extendedQuery()
+                        legalQuery
                 );
+
+////        Mono<List<Float>> originalEmbedding =
+////                embeddingService.embedReactive(
+////                        extended.query()
+////                );
+////
+////        Mono<List<Float>> extendedEmbedding =
+////                embeddingService.embedReactive(
+////                        extended.extendedQuery()
+//                );
 
         return Mono.zip(
                 originalEmbedding,

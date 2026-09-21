@@ -1,5 +1,6 @@
 package kbee.rag.qwen;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -137,39 +138,47 @@ public class QwenRagResponseRequest
     	            });
     	}
 
-    private String buildInput() {
+    	private String buildInput() {
 
-        StringBuilder input =
-                new StringBuilder();
+    	    StringBuilder input =
+    	            new StringBuilder();
 
-        input.append(
-                "PREGUNTA DEL USUARIO\n\n"
-        );
+    	    input.append(
+    	            "PREGUNTA DEL USUARIO\n\n"
+    	    );
 
-        input.append(
-                question
-        );
+    	    input.append(question);
 
-        input.append(
-                "\n\nFUENTES\n\n"
-        );
+    	    input.append(
+    	            "\n\nFUENTES\n\n"
+    	    );
 
-        int sourceNumber = 1;
+    	    List<ExpandedSource> topSources =
+    	            sources.stream()
+    	                    .sorted(
+    	                            Comparator.comparingDouble(
+    	                                    (ExpandedSource source) ->
+    	                                            source.selected().score()
+    	                            ).reversed()
+    	                    )
+    	                    .limit(20)
+    	                    .toList();
 
-        for (ExpandedSource source :
-                sources) {
+    	    int sourceIndex = 0;
 
-            appendSource(
-                    input,
-                    sourceNumber,
-                    source
-            );
+    	    for (ExpandedSource source : topSources) {
 
-            sourceNumber++;
-        }
+    	        appendSource(
+    	                input,
+    	                sourceIndex,
+    	                source
+    	        );
 
-        return input.toString();
-    }
+    	        sourceIndex++;
+    	    }
+
+    	    return input.toString();
+    	}
 
     private void appendSource(
             StringBuilder input,
