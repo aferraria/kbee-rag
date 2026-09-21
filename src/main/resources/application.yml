@@ -17,10 +17,16 @@ solr:
   source:
     base-url: http://localhost:8087/solr
     core: aacontent
+    # Basic auth (leave username empty to disable authentication)
+    username: ${SOLR_SOURCE_USERNAME:}
+    password: ${SOLR_SOURCE_PASSWORD:}
  
   target:
     base-url: http://localhost:8983/solr
-    core: kbee_segments  
+    core: kbee_segments
+    # Basic auth (leave username empty to disable authentication)
+    username: ${SOLR_TARGET_USERNAME:}
+    password: ${SOLR_TARGET_PASSWORD:}
 
 rag:
   prompts:

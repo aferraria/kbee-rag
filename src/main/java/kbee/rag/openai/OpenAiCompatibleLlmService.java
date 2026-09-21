@@ -99,7 +99,7 @@ public abstract class OpenAiCompatibleLlmService
                         )
                         .build();
 
-        System.out.println(
+        logger.debug(
                 "===== "
                         + providerId().toUpperCase()
                         + " MODEL: "

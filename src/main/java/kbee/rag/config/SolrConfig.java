@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.util.StringUtils;
 
 @Configuration
 public class SolrConfig {
@@ -21,9 +22,13 @@ public class SolrConfig {
             @Value("${solr.source.connection-timeout-ms:5000}")
             long connectionTimeoutMs,
             @Value("${solr.source.request-timeout-ms:30000}")
-            long requestTimeoutMs) {
+            long requestTimeoutMs,
+            @Value("${solr.source.username:}")
+            String username,
+            @Value("${solr.source.password:}")
+            String password) {
 
-        return new HttpJdkSolrClient.Builder(baseUrl)
+        HttpJdkSolrClient.Builder builder = new HttpJdkSolrClient.Builder(baseUrl)
                 .useHttp1_1(true)
                 .withConnectionTimeout(
                         connectionTimeoutMs,
@@ -32,8 +37,13 @@ public class SolrConfig {
                 .withRequestTimeout(
                         requestTimeoutMs,
                         TimeUnit.MILLISECONDS
-                )
-                .build();
+                );
+
+        if (StringUtils.hasText(username)) {
+            builder.withBasicAuthCredentials(username, password);
+        }
+
+        return builder.build();
     }
 
     @Primary
@@ -47,9 +57,13 @@ public class SolrConfig {
             @Value("${solr.target.connection-timeout-ms:5000}")
             long connectionTimeoutMs,
             @Value("${solr.target.request-timeout-ms:30000}")
-            long requestTimeoutMs) {
+            long requestTimeoutMs,
+            @Value("${solr.target.username:}")
+            String username,
+            @Value("${solr.target.password:}")
+            String password) {
 
-        return new HttpJdkSolrClient.Builder(baseUrl)
+        HttpJdkSolrClient.Builder builder = new HttpJdkSolrClient.Builder(baseUrl)
                 .useHttp1_1(true)
                 .withConnectionTimeout(
                         connectionTimeoutMs,
@@ -58,7 +72,12 @@ public class SolrConfig {
                 .withRequestTimeout(
                         requestTimeoutMs,
                         TimeUnit.MILLISECONDS
-                )
-                .build();
+                );
+
+        if (StringUtils.hasText(username)) {
+            builder.withBasicAuthCredentials(username, password);
+        }
+
+        return builder.build();
     }
 }
