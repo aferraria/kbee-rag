@@ -62,6 +62,16 @@ public class BannerUtil {
                 "|_____|"
         });
 
+        // K
+        FONT.put('K', new String[]{
+                " _   __ ",
+                "| | / / ",
+                "| |/ /  ",
+                "|    \\  ",
+                "| |\\  \\ ",
+                "\\_| \\_/ "
+        });
+
         // L
         FONT.put('L', new String[]{
                 " _     ",

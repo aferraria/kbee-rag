@@ -155,8 +155,8 @@
 		</dependency>
 
 
-
-		<!-- JACCKSON 2 not supported by Spring 4 ========================================================  -->
+		<!-- JACCKSON 2 not supported by Spring 4
+		========================================================  -->
 
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
@@ -185,15 +185,56 @@
 
 	</dependencies>
 
+
 	<build>
+
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+			<resource>
+				<directory>src/main/java</directory>
+				<includes>
+					<include>**</include>
+				</includes>
+				<excludes>
+					<exclude>**/*.java</exclude>
+				</excludes>
+			</resource>
+		</resources>
+
+
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<release>21</release>
+				</configuration>
+			</plugin>
 
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<mainClass>kbee.rag.KbeeRagApplication</mainClass>
+					<layout>JAR</layout>
+				</configuration>
 			</plugin>
 
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>./src/test/*</exclude>
+						<exclude>./src/main/resources/*</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
 		</plugins>
+
+
 	</build>
 
 </project>

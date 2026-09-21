@@ -9,52 +9,38 @@ import jakarta.annotation.PostConstruct;
 import kbee.rag.audit.Logger;
 import kbee.rag.audit.ServerConstant;
 
-
 @ConfigurationPropertiesScan
 @SpringBootApplication
 public class KbeeRagApplication {
-	 
+
 	static private Logger logger = Logger.getLogger(KbeeRagApplication.class.getName());
 	static private Logger std_logger = Logger.getLogger("StartupLogger");
-	
+
 	public static void main(String[] args) {
-        logger.debug( "Argumentos recibidos: "  + Arrays.toString(args));
-        SpringApplication.run(KbeeRagApplication.class, args);
-    }
+		 std_logger.debug("Args: " + Arrays.toString(args));
+		SpringApplication.run(KbeeRagApplication.class, args);
+	}
 
-
-
-    @PostConstruct
+	@PostConstruct
 	public void onInitialize() {
 
-    	
-    	std_logger.debug( this.getClass().getName() +   " is starting up...");
-
-    	std_logger.info("");
-		
-		
-		// for (String s : DellemuseServerAppVersion.getAppCharacterName())
-		// std_logger.info(s);
-
-
-		
-		for (String s : BannerUtil.generateBanner("RAG"))
-			std_logger.info(s);
-
-		
-		
+		std_logger.debug(this.getClass().getName() + " is starting up...");
 		std_logger.info("");
 
-		std_logger.info("version: " + "0.1b");
+		for (String s : BannerUtil.generateBanner("KBEE"))
+			std_logger.info(s);
 
+		std_logger.info("");
+		std_logger.info("version: " + "0.2b");
 		std_logger.info(ServerConstant.SEPARATOR);
 		std_logger.info("This software is licensed under the Apache License, Version 2.0");
 		std_logger.info("http://www.apache.org/licenses/LICENSE-2.0");
 
 		initShutdownMessage();
+
 	}
 
-
+	
 	private void initShutdownMessage() {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {
@@ -65,5 +51,5 @@ public class KbeeRagApplication {
 			}
 		});
 	}
-	
+
 }

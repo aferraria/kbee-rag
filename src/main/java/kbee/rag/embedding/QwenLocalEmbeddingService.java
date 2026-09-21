@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-
+import kbee.rag.audit.Logger;
 
 
 @Service
@@ -25,6 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 )
 public class QwenLocalEmbeddingService implements EmbeddingService {
 
+	static private Logger logger = Logger.getLogger( QwenLocalEmbeddingService.class.getName());
+	
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
@@ -57,7 +59,7 @@ public class QwenLocalEmbeddingService implements EmbeddingService {
                         )
                         .build();
 
-        System.out.println(
+        logger.debug(
                 "===== OLLAMA EMBEDDING MODEL: "
                         + this.model
                         + " ====="
