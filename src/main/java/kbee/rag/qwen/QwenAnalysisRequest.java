@@ -57,7 +57,7 @@ public class QwenAnalysisRequest
 
         return instructionProvider.get(
                 "qwen",
-                "rag_analysis"
+                "document_analysis"
         );
     }
 
@@ -89,10 +89,7 @@ public class QwenAnalysisRequest
 
     private String buildInput() {
 
-        StringBuilder input =
-                new StringBuilder();
-
-        String context = """
+        return """
                 Pregunta del usuario:
 
                 %s
@@ -104,13 +101,6 @@ public class QwenAnalysisRequest
                         question,
                         document.text()
                 );
-
-        String instructions =
-                instructionProvider.get(
-                        "document-analysis"
-                );
-
-        return input.toString();
     }
 
    

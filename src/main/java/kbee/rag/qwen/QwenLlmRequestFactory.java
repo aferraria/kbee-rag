@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import kbee.rag.config.InstructionProvider;
+import kbee.rag.llm.LlmAnalysisRequest;
 import kbee.rag.llm.LlmBatchEnrichmentRequest;
 import kbee.rag.llm.LlmEnrichmentRequest;
 import kbee.rag.llm.LlmLawInterpretationRequest;
@@ -103,6 +104,19 @@ public class QwenLlmRequestFactory
                             )
                             .objectMapper(
                                     objectMapper
+                            );
+        }
+        
+        if (LlmAnalysisRequest.class.equals(requestType)) {
+
+            return (LlmRequestBuilder<T>)
+                    QwenAnalysisRequest
+                            .builder()
+                            .instructionProvider(
+                                    instructionProvider
+                            )
+                            .llm(
+                                    llmService
                             );
         }
 

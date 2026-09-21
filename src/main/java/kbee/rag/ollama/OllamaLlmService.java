@@ -120,11 +120,16 @@ public class OllamaLlmService
         	                false,
         	                false,
         	                ollamaRequest.format(),
+//        	                new Options(
+//        	                        0.0,
+//        	                        48000,
+//        	                        8192
+//        	                )
         	                new Options(
-        	                        0.0,
-        	                        48000,
-        	                        8192
-        	                )
+        	                	    0.0,
+        	                	    32768,
+        	                	    4096
+        	                	)
         	        );
 
             String json =

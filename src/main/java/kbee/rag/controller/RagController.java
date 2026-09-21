@@ -52,13 +52,11 @@ public class RagController extends RagBaseController {
 
 		logger.debug("/document-analysis" + request.toString());
 
-		long startTime = System.currentTimeMillis();
 		// Mono<DocumentAnalysisResponse>
-		// r=ragService.analyzeDocument(request.documentId(), request.question(),
+		return ragService.analyze(request);
 		// request.llm());
-		logger.debug("round trip time for /document-analysis: " + (System.currentTimeMillis() - startTime) + " ms");
 
-		return null;
+		//return null;
 
 	}
 }

@@ -225,7 +225,6 @@ public class RagService {
     private Mono<DocumentAnalysisResponse> generateAnalysis(
             String question,
             DocumentText document) {
-
     	
 	    return llmRequestFactory.execute(
 	    		LlmAnalysisRequest.class,
