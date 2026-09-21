@@ -125,14 +125,22 @@ llm-test:
   enabled: false
   
 reranker:
-   provider: local-qwen
-
-   enabled: true
-   base-url: http://localhost:8091
-   connection-timeout-ms: 5000
-   request-timeout-ms: 9000000
-   candidate-count: 50
-   top-k: 5  
+    provider: openrouter
+    enabled: true
+  	
+    local:
+       base-url: http://localhost:8091
+       connection-timeout-ms: 5000
+       request-timeout-ms: 9000000
+       candidate-count: 50
+       top-k: 5
+  	     
+    openrouter:
+      base-url: https://openrouter.ai/api/v1
+      api-key: ${OPENROUTER_API_KEY}
+      model: qwen/qwen3-reranker-8b
+      connection-timeout-ms: 5000
+      request-timeout-ms: 120000
    
 judicial-indexer:
    enabled: false
