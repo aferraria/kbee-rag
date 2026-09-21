@@ -5,6 +5,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +16,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import kbee.rag.audit.Logger;
 import kbee.rag.embedding.EmbeddingService;
 import kbee.rag.io.ApiFile;
 import kbee.rag.io.JudicialFileParser;
@@ -32,6 +37,10 @@ import reactor.core.scheduler.Schedulers;
 public class JudicialDecisionIndexerCommand
         implements CommandLineRunner {
 
+	
+	static private Logger logger = Logger.getLogger(JudicialDecisionIndexerCommand.class.getName());
+	
+	
     /*
      * =================================================
      * DEPENDENCIAS
@@ -65,6 +74,33 @@ public class JudicialDecisionIndexerCommand
     private final int commitEveryDocuments;
     
     private final int enrichmentBatchSize;
+
+    /**
+     * Rango de ids a indexar (inclusive).
+     * -1 significa sin límite.
+     */
+    private final long fromId;
+
+    private final long toId;
+
+    private final IndexCheckpointStore checkpointStore;
+
+    /*
+     * =================================================
+     * CONTADORES
+     * =================================================
+     */
+
+    private final AtomicLong indexedCount = new AtomicLong();
+
+    private final AtomicLong skippedCount = new AtomicLong();
+
+    private final AtomicLong failedCount = new AtomicLong();
+
+    private final AtomicLong totalFilesInRange = new AtomicLong();
+
+    private static final Pattern FILE_ID_PATTERN =
+            Pattern.compile("fallo-(\\d+)\\.txt", Pattern.CASE_INSENSITIVE);
 
     /*
      * =================================================
@@ -100,7 +136,16 @@ public class JudicialDecisionIndexerCommand
             @Value("${judicial-indexer.commit-every-documents:100}")
             int commitEveryDocuments,
             @Value("${kbee.rag.enrichment-batch-size:4}")
-            int enrichmentBatchSize) {
+            int enrichmentBatchSize,
+
+            @Value("${judicial-indexer.from-id:-1}")
+            long fromId,
+
+            @Value("${judicial-indexer.to-id:-1}")
+            long toId,
+
+            @Value("${judicial-indexer.index-directory:index}")
+            String indexDirectory) {
 
         this.segmenter =
                 segmenter;
@@ -137,6 +182,17 @@ public class JudicialDecisionIndexerCommand
         this.enrichmentBatchSize = 
         		enrichmentBatchSize;
 
+        this.fromId =
+                fromId;
+
+        this.toId =
+                toId;
+
+        this.checkpointStore =
+                new IndexCheckpointStore(
+                        Path.of(indexDirectory)
+                );
+
     }
 
     /*
@@ -151,17 +207,47 @@ public class JudicialDecisionIndexerCommand
 
         indexAll()
                 .doOnSubscribe(subscription ->
-                        System.out.println(
+                        logger.info(
                                 "Iniciando indexación desde: "
                                         + directory.toAbsolutePath()
+                                        + " | rango: ["
+                                        + (fromId < 0 ? "-" : fromId)
+                                        + ", "
+                                        + (toId < 0 ? "-" : toId)
+                                        + "]"
                         )
                 )
                 .doOnSuccess(unused ->
-                        System.out.println(
-                                "Indexación terminada."
-                        )
+                        logSummary()
                 )
                 .block();
+    }
+
+    private void logSummary() {
+
+        long total = totalFilesInRange.get();
+        long indexed = indexedCount.get();
+        long skipped = skippedCount.get();
+        long failed = failedCount.get();
+        long pending = total - indexed - skipped - failed;
+
+        logger.info(
+                String.format(
+                        "Indexación terminada. "
+                                + "Total en rango: %d | "
+                                + "Indexados: %d | "
+                                + "Salteados (checkpoint): %d | "
+                                + "Fallidos: %d | "
+                                + "Pendientes: %d | "
+                                + "Checkpoints acumulados: %d",
+                        total,
+                        indexed,
+                        skipped,
+                        failed,
+                        pending,
+                        checkpointStore.countIndexed()
+                )
+        );
     }
 
     /*
@@ -175,14 +261,11 @@ public class JudicialDecisionIndexerCommand
         return loadFiles()
 
                 /*
-                 * Agrupamos archivos físicos.
+                 * Un archivo por vez, con commit
+                 * y checkpoint por archivo.
                  */
-                .buffer(
-                        commitEveryDocuments
-                )
-
                 .concatMap(
-                        this::processDocumentBatch
+                        this::processAndCheckpointFile
                 )
 
                 .then();
@@ -190,44 +273,68 @@ public class JudicialDecisionIndexerCommand
 
     /*
      * =================================================
-     * BATCH DE ARCHIVOS
+     * ARCHIVO + COMMIT + CHECKPOINT
      * =================================================
      */
 
-    private Mono<Void> processDocumentBatch(
-            List<PathFile> files) {
+    /**
+     * Procesa un archivo, commitea en Solr y
+     * recién entonces escribe el checkpoint.
+     *
+     * El costo del commit por archivo es
+     * despreciable frente al tiempo de
+     * enriquecimiento/embeddings (~minutos),
+     * y garantiza que un shutdown pierda a lo
+     * sumo el archivo en curso.
+     */
+    private Mono<Void> processAndCheckpointFile(
+            PathFile file) {
 
-        if (files == null
-                || files.isEmpty()) {
-
-            return Mono.empty();
-        }
-
-        return Flux.fromIterable(
-                        files
+        return processFile(
+                        file
                 )
 
-                /*
-                 * Un archivo físico por vez.
-                 */
-                .concatMap(
-                        this::processFile
-                )
+                .flatMap(succeeded ->
 
-                /*
-                 * Commit después del batch.
-                 */
-                .then(
                         segmentDao.commit()
+
+                                .then(
+                                        Mono.fromRunnable(() -> {
+
+                                            checkpointStore.markIndexed(
+                                                    stripExtension(
+                                                            succeeded.name()
+                                                    )
+                                            );
+
+                                            indexedCount
+                                                    .incrementAndGet();
+
+                                            logger.info(
+                                                    succeeded.name()
+                                                            + " -> COMMIT + checkpoint | "
+                                                            + "acumulado indexados: "
+                                                            + indexedCount.get()
+                                                            + " / "
+                                                            + totalFilesInRange.get()
+                                            );
+                                        })
+                                )
                 )
 
-                .doOnSuccess(unused ->
-                        System.out.println(
-                                "COMMIT después de "
-                                        + files.size()
-                                        + " archivos"
-                        )
-                );
+                .then();
+    }
+
+    private static String stripExtension(
+            String name) {
+
+        int dot =
+                name.lastIndexOf('.');
+
+        return dot < 0
+                ? name
+                : name.substring(0, dot);
+        
     }
 
     /*
@@ -269,19 +376,59 @@ public class JudicialDecisionIndexerCommand
                                 .filter(
                                         Files::isRegularFile
                                 )
+
+                                /*
+                                 * Sólo archivos fallo-<id>.txt
+                                 * dentro del rango pedido.
+                                 */
                                 .filter(path ->
-                                        path.getFileName()
-                                                .toString()
-                                                .toLowerCase()
-                                                .endsWith(".txt")
-                                )
-                                .sorted(
-                                        Comparator.comparing(
-                                                path ->
-                                                        path.getFileName()
-                                                            .toString()
+                                        isInRange(
+                                                path
                                         )
                                 )
+
+                                /*
+                                 * Orden numérico por id.
+                                 */
+                                .sorted(
+                                        Comparator.comparingLong(
+                                                path ->
+                                                        extractId(path)
+                                                                .orElse(Long.MAX_VALUE)
+                                        )
+                                )
+
+                                .peek(path ->
+                                        totalFilesInRange
+                                                .incrementAndGet()
+                                )
+
+                                /*
+                                 * Salteamos los ya indexados
+                                 * (checkpoint en el directorio
+                                 * "index").
+                                 */
+                                .filter(path -> {
+
+                                    boolean alreadyIndexed =
+                                            checkpointStore.isIndexed(
+                                                    baseName(path)
+                                            );
+
+                                    if (alreadyIndexed) {
+
+                                        skippedCount
+                                                .incrementAndGet();
+
+                                        logger.debug(
+                                                path.getFileName()
+                                                        + " -> ya indexado, se saltea"
+                                        );
+                                    }
+
+                                    return !alreadyIndexed;
+                                })
+
                                 .map(
                                         PathFile::new
                                 )
@@ -297,6 +444,79 @@ public class JudicialDecisionIndexerCommand
                         Flux::fromIterable
                 );
     }
+
+    /*
+     * =================================================
+     * RANGO E IDS
+     * =================================================
+     */
+
+    private boolean isInRange(
+            Path path) {
+
+        OptionalLong id =
+                extractId(
+                        path
+                );
+
+        if (id.isEmpty()) {
+            return false;
+        }
+
+        long value =
+                id.getAsLong();
+
+        if (fromId >= 0
+                && value < fromId) {
+            return false;
+        }
+
+        if (toId >= 0
+                && value > toId) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static OptionalLong extractId(
+            Path path) {
+
+        Matcher matcher =
+                FILE_ID_PATTERN.matcher(
+                        path.getFileName()
+                                .toString()
+                );
+
+        if (!matcher.matches()) {
+            return OptionalLong.empty();
+        }
+
+        return OptionalLong.of(
+                Long.parseLong(
+                        matcher.group(1)
+                )
+        );
+    }
+
+    /**
+     * Nombre base sin extensión.
+     * fallo-10002.txt -> fallo-10002
+     */
+    private static String baseName(
+            Path path) {
+
+        String name =
+                path.getFileName()
+                        .toString();
+
+        int dot =
+                name.lastIndexOf('.');
+
+        return dot < 0
+                ? name
+                : name.substring(0, dot);
+    }
     
     /*
      * =================================================
@@ -304,8 +524,15 @@ public class JudicialDecisionIndexerCommand
      * =================================================
      */
 
-    private Mono<Void> processFile(
-            ApiFile apiFile) {
+    /**
+     * Procesa un archivo físico.
+     *
+     * Emite el archivo si se procesó sin errores,
+     * o vacío si falló (para no cortar la indexación
+     * y no escribir su checkpoint).
+     */
+    private Mono<PathFile> processFile(
+            PathFile apiFile) {
 
 
         return legalFileParser
@@ -325,7 +552,11 @@ public class JudicialDecisionIndexerCommand
                         this::processTextFile
                 )
 
-                .then()
+                .then(
+                        Mono.just(
+                                apiFile
+                        )
+                )
 
                 /*
                  * Un archivo con error no detiene
@@ -333,7 +564,10 @@ public class JudicialDecisionIndexerCommand
                  */
                 .onErrorResume(error -> {
 
-                    System.err.println(
+                    failedCount
+                            .incrementAndGet();
+
+                    logger.error(
                             apiFile.name()
                                     + " -> ERROR: "
                                     + error.getMessage()
@@ -370,7 +604,7 @@ public class JudicialDecisionIndexerCommand
 //                return Mono.empty();
 //        	}
 //        	else {
-//        		System.out.println("Fallo faltante");
+//        		logger.info("Fallo faltante");
 //        	}
 //        }
         
@@ -450,13 +684,15 @@ public class JudicialDecisionIndexerCommand
                     )
                             / 1_000_000_000.0;
 
-            System.out.printf(
-                    "%s [%s] -> OK - %.2f segundos%n",
-                    file.id(),
-                    file.type(),
-                    elapsedSeconds
-            );
-
+            String message = String.format(
+					"%s [%s] -> OK - %.2f segundos",
+					file.id(),
+					file.type(),
+					elapsedSeconds
+			);
+            
+            logger.info(message);
+            
         })
 
         .doOnError(error -> {
@@ -468,14 +704,15 @@ public class JudicialDecisionIndexerCommand
                     )
                             / 1_000_000_000.0;
 
-            System.out.printf(
-                    "%s [%s] -> ERROR después de %.2f segundos: %s%n",
-                    file.id(),
-                    file.type(),
-                    elapsedSeconds,
-                    error.getMessage()
-            );
+            String message = String.format(
+            							"%s [%s] -> ERROR después de %.2f segundos: %s",
+            							file.id(),
+            							file.type(),
+            							elapsedSeconds,
+            							error.getMessage());
 
+            logger.error(message);
+            
         });
     }
 

@@ -37,11 +37,11 @@ public class LocalQwenRerankerService
 
     public LocalQwenRerankerService(
             ObjectMapper objectMapper,
-            @Value("${reranker.base-url}")
+            @Value("${reranker.local.base-url}")
             String baseUrl,
-            @Value("${reranker.connection-timeout-ms:5000}")
+            @Value("${reranker.local.connection-timeout-ms:5000}")
             long connectionTimeoutMs,
-            @Value("${reranker.request-timeout-ms:120000}")
+            @Value("${reranker.local.request-timeout-ms:120000}")
             long requestTimeoutMs) {
 
         this.objectMapper =

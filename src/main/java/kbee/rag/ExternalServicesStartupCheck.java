@@ -25,7 +25,6 @@ import kbee.rag.audit.ServerConstant;
  * are operational and logs the result.
  */
 @Component
-@Order(1)
 public class ExternalServicesStartupCheck implements ApplicationRunner {
 
     static private Logger startupLogger = Logger.getLogger("StartupLogger");
@@ -55,7 +54,9 @@ public class ExternalServicesStartupCheck implements ApplicationRunner {
     private final String openrouterBaseUrl;
 
     private final boolean rerankerEnabled;
-    private final String rerankerBaseUrl;
+    private final String rerankerProvider;
+    private final String rerankerLocalBaseUrl;
+    private final String rerankerOpenrouterBaseUrl;
 
     public ExternalServicesStartupCheck(
             @Qualifier("sourceSolrClient") SolrClient sourceSolrClient,
@@ -77,7 +78,9 @@ public class ExternalServicesStartupCheck implements ApplicationRunner {
             @Value("${llm.openrouter.enabled:false}") boolean openrouterEnabled,
             @Value("${llm.openrouter.base-url:}") String openrouterBaseUrl,
             @Value("${reranker.enabled:false}") boolean rerankerEnabled,
-            @Value("${reranker.base-url:}") String rerankerBaseUrl) {
+            @Value("${reranker.provider:}") String rerankerProvider,
+            @Value("${reranker.local.base-url:}") String rerankerLocalBaseUrl,
+            @Value("${reranker.openrouter.base-url:}") String rerankerOpenrouterBaseUrl) {
 
         this.sourceSolrClient = sourceSolrClient;
         this.targetSolrClient = targetSolrClient;
@@ -98,7 +101,9 @@ public class ExternalServicesStartupCheck implements ApplicationRunner {
         this.openrouterEnabled = openrouterEnabled;
         this.openrouterBaseUrl = openrouterBaseUrl;
         this.rerankerEnabled = rerankerEnabled;
-        this.rerankerBaseUrl = rerankerBaseUrl;
+        this.rerankerProvider = rerankerProvider;
+        this.rerankerLocalBaseUrl = rerankerLocalBaseUrl;
+        this.rerankerOpenrouterBaseUrl = rerankerOpenrouterBaseUrl;
     }
 
     @Override
@@ -109,9 +114,11 @@ public class ExternalServicesStartupCheck implements ApplicationRunner {
         // Solr
         report.add(status("Solr source  (" + solrSourceBaseUrl + " / core: " + solrSourceCore + ")",
                 checkSolr(sourceSolrClient, solrSourceCore)));
+      
         report.add(status("Solr target  (" + solrTargetBaseUrl + " / core: " + solrTargetCore + ")",
                 checkSolr(targetSolrClient, solrTargetCore)));
 
+        
         // Embedding provider
         if ("qwen-local".equals(embeddingProvider) && StringUtils.hasText(embeddingQwenBaseUrl))
             report.add(status("Embedding qwen-local (" + embeddingQwenBaseUrl + ")", checkHttp(embeddingQwenBaseUrl)));
@@ -132,9 +139,16 @@ public class ExternalServicesStartupCheck implements ApplicationRunner {
         if (openrouterEnabled)
             report.add(status("LLM openrouter (" + openrouterBaseUrl + ")", checkHttp(openrouterBaseUrl + "/models")));
 
+        
+        
         // Reranker
-        if (rerankerEnabled)
-            report.add(status("Reranker (" + rerankerBaseUrl + ")", checkHttp(rerankerBaseUrl)));
+        if (rerankerEnabled) {
+            String rerankerUrl = "openrouter".equals(rerankerProvider)
+                    ? rerankerOpenrouterBaseUrl
+                    : rerankerLocalBaseUrl;
+            report.add(status("Reranker " + rerankerProvider + " (" + rerankerUrl + ")",
+                    checkHttp(rerankerUrl + "/models")));
+        }
 
         startupLogger.info(ServerConstant.SEPARATOR);
         startupLogger.info("External services status:");
