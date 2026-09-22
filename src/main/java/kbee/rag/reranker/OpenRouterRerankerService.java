@@ -14,6 +14,9 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.annotation.PostConstruct;
+import kbee.rag.KbeeRagApplication;
+import kbee.rag.audit.Logger;
 import kbee.rag.search.ExpandedSource;
 import kbee.rag.search.SegmentSearchResult;
 import reactor.core.publisher.Mono;
@@ -29,7 +32,10 @@ import reactor.util.retry.Retry;
 public class OpenRouterRerankerService
         implements RerankerService {
 
-    private final HttpClient httpClient;
+
+	static private Logger logger = Logger.getLogger(OpenRouterRerankerService.class.getName());
+
+	private final HttpClient httpClient;
 
     private final ObjectMapper objectMapper;
 
@@ -177,6 +183,13 @@ public class OpenRouterRerankerService
         );
     }
     
+    
+    
+	@PostConstruct
+	public void init() {
+		logger.debug( this.getClass().getName());
+	}
+	
     private boolean isRetryable(
             Throwable error) {
 
