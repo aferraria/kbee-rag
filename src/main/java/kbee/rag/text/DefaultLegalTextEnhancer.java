@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 
@@ -21,6 +23,9 @@ import reactor.core.publisher.Mono;
 @Service
 public class DefaultLegalTextEnhancer
         implements LegalTextEnhancer {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(LegalTextEnhancer.class);
 
     private final ThesaursService thesaurusService;
     
@@ -172,8 +177,24 @@ public class DefaultLegalTextEnhancer
     public Mono<List<TextEnhanced>> enhance(
             List<String> texts) {
 
+        long voicesStart =
+                System.nanoTime();
+
         return getBatchVoices(texts)
                 .collectList()
+                .doOnNext(inputs -> {
+
+                    long elapsedMs =
+                            (System.nanoTime() - voicesStart)
+                                    / 1_000_000;
+
+                    log.info(
+                            "VOICES PERF | texts={} | inputs={} | elapsedMs={}",
+                            texts.size(),
+                            inputs.size(),
+                            elapsedMs
+                    );
+                })
                 .flatMap(this::enhanceBatch)
                 .flatMapMany(Flux::fromIterable)
                 .flatMapSequential(
@@ -213,10 +234,7 @@ public class DefaultLegalTextEnhancer
 
         List<BatchInput> inputs =
                 IntStream
-                        .range(
-                                0,
-                                texts.size()
-                        )
+                        .range(0, texts.size())
                         .mapToObj(index ->
                                 new BatchInput(
                                         index + 1,
@@ -226,9 +244,7 @@ public class DefaultLegalTextEnhancer
                         .toList();
 
         return Flux
-                .fromIterable(
-                        inputs
-                )
+                .fromIterable(inputs)
                 .concatMap(input -> {
 
                     String text =
@@ -246,15 +262,29 @@ public class DefaultLegalTextEnhancer
                         );
                     }
 
+                    long start =
+                            System.nanoTime();
+
                     return thesaurusService
-                            .candidates(
-                                    text
-                            )
+                            .candidates(text)
                             .defaultIfEmpty(
                                     new ConceptList(
                                             List.of()
                                     )
                             )
+                            .doOnNext(result -> {
+
+                                long elapsedMs =
+                                        (System.nanoTime() - start)
+                                                / 1_000_000;
+
+                                log.info(
+                                        "CANDIDATES PERF | id={} | concepts={} | elapsedMs={}",
+                                        input.id(),
+                                        result.concepts().size(),
+                                        elapsedMs
+                                );
+                            })
                             .map(extraction ->
                                     new BatchCandidateInput(
                                             input.id(),

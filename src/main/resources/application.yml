@@ -6,6 +6,7 @@ logging:
     kbee.rag.thesaurus.ThesaursService: ERROR
     kbee.rag.reranker.RerankRequest: DEBUG
     kbee.rag.ollama.OllamaLlmService: DEBUG
+    kbee.rag.text.LegalTextEnhancer: DEBUG
     kbee.rag.search.SolrSegmentDao: DEBUG
 
 spring:

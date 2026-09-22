@@ -12,6 +12,7 @@ import kbee.rag.llm.LlmRequestBuilder;
 import kbee.rag.llm.LlmResponseRequest;
 import kbee.rag.llm.LlmService;
 import kbee.rag.ollama.OllamaLlmRequest;
+import kbee.rag.ollama.OllamaOptions;
 import kbee.rag.search.ExpandedSource;
 import kbee.rag.search.RagResponse;
 import kbee.rag.search.SegmentSearchResult;
@@ -115,7 +116,14 @@ public class QwenRagResponseRequest
     	}
 
 
-
+    	public static OllamaOptions defaults() {
+    	    return new OllamaOptions(
+    	            0.0,
+    	            65536,
+    	            8192,
+    	            42
+    	    );
+    	}
     	@Override
     	public Mono<RagResponse> execute() {
 
@@ -261,13 +269,34 @@ public class QwenRagResponseRequest
                 source.selected();
 
         return new Source(
-                selected.documentId(),
+                effectiveDocumentId(selected.documentId()),
                 selected.documentTitle(),
                 selected.documentDate(),
                 (float) selected.score()
         );
     }
+    private String effectiveDocumentId(
+            String documentId) {
 
+
+        if (documentId.startsWith(
+                "sumario-fallo-"
+        )) {
+
+            int lastDash =
+                    documentId.lastIndexOf('-');
+
+            if (lastDash > 0) {
+
+                return documentId.substring(
+                        "sumario-".length(),
+                        lastDash
+                );
+            }
+        }
+
+        return documentId;
+    }
     
     private List<ExpandedSource> parseResponse(
             String response) {
