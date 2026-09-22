@@ -18,7 +18,6 @@ import kbee.rag.io.JudicialFileParser;
 import kbee.rag.io.PathFile;
 import kbee.rag.io.TextFile;
 import kbee.rag.search.SegmentDao;
-import kbee.rag.search.SegmentSearchResult;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;

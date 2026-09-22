@@ -173,18 +173,36 @@ public class ThesaursService {
                         windows.size() + 1
                 );
 
-        textsToEmbed.add(
+        
+        String text =
                 normalizeForEmbedding(
                         segmentText
-                )
+                );
+
+        if (text == null || text.isBlank()) {
+
+            text = "sin contenido";
+        }
+
+        textsToEmbed.add(
+                text
         );
 
         for (String window : windows) {
 
-            textsToEmbed.add(
+            String windowText =
                     normalizeForEmbedding(
                             window
-                    )
+                    );
+
+            if (windowText == null
+                    || windowText.isBlank()) {
+
+                windowText = text;
+            }
+
+            textsToEmbed.add(
+                    windowText
             );
         }
 

@@ -5,6 +5,7 @@ logging:
   level:
     kbee.rag.thesaurus.ThesaursService: ERROR
     kbee.rag.reranker.RerankRequest: DEBUG
+    kbee.rag.ollama.OllamaLlmService: DEBUG
 
 spring:
   security:

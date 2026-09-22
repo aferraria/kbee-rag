@@ -281,14 +281,14 @@ public class DefaultLegalTextEnhancer
 
     private boolean containsLegalReference(
             String text) {
-
-        if (text == null || text.isBlank()) {
-            return false;
-        }
-
-        return LEGAL_REFERENCE_PATTERN
-                .matcher(text)
-                .find();
+    	return false;
+//        if (text == null || text.isBlank()) {
+//            return false;
+//        }
+//
+//        return LEGAL_REFERENCE_PATTERN
+//                .matcher(text)
+//                .find();
     }
 
     

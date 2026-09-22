@@ -1,5 +1,6 @@
 package kbee.rag.reranker;
 
+@SuppressWarnings("serial")
 public class OpenRouterException
         extends RuntimeException {
 

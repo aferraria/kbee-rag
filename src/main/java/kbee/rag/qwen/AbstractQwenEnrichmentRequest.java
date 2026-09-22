@@ -13,9 +13,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import kbee.rag.ollama.OllamaLlmRequest;
+import kbee.rag.ollama.OllamaOptions;
 import kbee.rag.thesaurus.Concept;
-import java.util.List;
-import java.util.Objects;
 
 
 public abstract class AbstractQwenEnrichmentRequest<T>
@@ -23,6 +22,15 @@ public abstract class AbstractQwenEnrichmentRequest<T>
 
     private static final int MAX_CANDIDATE_VOICES =
             40;
+    
+	public OllamaOptions options() {
+		return new OllamaOptions(
+		        0.0,
+		        16384,
+		        8192,
+		        42
+		);
+	}
 
     protected List<String> buildLlmCandidates(
             List<Concept> candidates) {

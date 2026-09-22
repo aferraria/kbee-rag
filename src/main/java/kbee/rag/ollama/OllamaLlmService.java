@@ -6,13 +6,15 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import kbee.rag.llm.LlmException;
@@ -24,6 +26,9 @@ import reactor.core.scheduler.Schedulers;
 @Service
 public class OllamaLlmService
         implements LlmService {
+	
+    private static final Logger log =
+            LoggerFactory.getLogger(OllamaLlmService.class);;
 
     public static final String PROVIDER_ID = "ollama";
 
@@ -103,6 +108,9 @@ public class OllamaLlmService
 
         	OllamaLlmRequest<?> ollamaRequest =
         	        (OllamaLlmRequest<?>) request;
+        	
+        	OllamaOptions options =
+        	        ollamaRequest.options();
 
         	OllamaRequest requestBody =
         	        new OllamaRequest(
@@ -120,18 +128,14 @@ public class OllamaLlmService
         	                false,
         	                false,
         	                ollamaRequest.format(),
-//        	                new Options(
-//        	                        0.0,
-//        	                        48000,
-//        	                        8192
-//        	                )
         	                new Options(
-        	                	    0.0,
-        	                	    32768,
-        	                	    4096
-        	                	)
+        	                        options.temperature(),
+        	                        options.contextSize(),
+        	                        options.maxOutputTokens(),
+        	                        options.seed()
+        	                )
         	        );
-
+        	
             String json =
                     objectMapper.writeValueAsString(
                             requestBody
@@ -191,6 +195,20 @@ public class OllamaLlmService
                                 + response.body()
                 );
             }
+            
+            log.info(
+                    "OLLAMA PERF | request={} | model={} | " +
+                    "promptTokens={} | outputTokens={} | " +
+                    "promptMs={} | evalMs={} | loadMs={} | totalMs={}",
+                    request.getClass().getSimpleName(),
+                    model,
+                    ollamaResponse.promptEvalCount(),
+                    ollamaResponse.evalCount(),
+                    ollamaResponse.promptEvalDuration() / 1_000_000,
+                    ollamaResponse.evalDuration() / 1_000_000,
+                    ollamaResponse.loadDuration() / 1_000_000,
+                    ollamaResponse.totalDuration() / 1_000_000
+            );
 
             return ollamaResponse
                     .message()
@@ -216,107 +234,107 @@ public class OllamaLlmService
         }
     }
     
-    private Map<String, Object> buildFormatSchema() {
-
-        Map<String, Object> termProperties =
-                new LinkedHashMap<>();
-
-        termProperties.put(
-                "termino",
-                Map.of(
-                        "type",
-                        "string"
-                )
-        );
-
-        termProperties.put(
-                "justificacion",
-                Map.of(
-                        "type",
-                        "string"
-                )
-        );
-
-        Map<String, Object> termSchema =
-                new LinkedHashMap<>();
-
-        termSchema.put(
-                "type",
-                "object"
-        );
-
-        termSchema.put(
-                "properties",
-                termProperties
-        );
-
-        termSchema.put(
-                "required",
-                List.of(
-                        "termino",
-                        "justificacion"
-                )
-        );
-
-        termSchema.put(
-                "additionalProperties",
-                false
-        );
-
-        Map<String, Object> properties =
-                new LinkedHashMap<>();
-
-        properties.put(
-                "terminos",
-                Map.of(
-                        "type",
-                        "array",
-                        "items",
-                        termSchema
-                )
-        );
-
-        properties.put(
-                "propositions",
-                Map.of(
-                        "type",
-                        "array",
-                        "items",
-                        Map.of(
-                                "type",
-                                "string"
-                        )
-                )
-        );
-
-        Map<String, Object> schema =
-                new LinkedHashMap<>();
-
-        schema.put(
-                "type",
-                "object"
-        );
-
-        schema.put(
-                "properties",
-                properties
-        );
-
-        schema.put(
-                "required",
-                List.of(
-                        "terminos",
-                        "propositions"
-                )
-        );
-
-        schema.put(
-                "additionalProperties",
-                false
-        );
-
-        return schema;
-    }
+//    private Map<String, Object> buildFormatSchema() {
+//
+//        Map<String, Object> termProperties =
+//                new LinkedHashMap<>();
+//
+//        termProperties.put(
+//                "termino",
+//                Map.of(
+//                        "type",
+//                        "string"
+//                )
+//        );
+//
+//        termProperties.put(
+//                "justificacion",
+//                Map.of(
+//                        "type",
+//                        "string"
+//                )
+//        );
+//
+//        Map<String, Object> termSchema =
+//                new LinkedHashMap<>();
+//
+//        termSchema.put(
+//                "type",
+//                "object"
+//        );
+//
+//        termSchema.put(
+//                "properties",
+//                termProperties
+//        );
+//
+//        termSchema.put(
+//                "required",
+//                List.of(
+//                        "termino",
+//                        "justificacion"
+//                )
+//        );
+//
+//        termSchema.put(
+//                "additionalProperties",
+//                false
+//        );
+//
+//        Map<String, Object> properties =
+//                new LinkedHashMap<>();
+//
+//        properties.put(
+//                "terminos",
+//                Map.of(
+//                        "type",
+//                        "array",
+//                        "items",
+//                        termSchema
+//                )
+//        );
+//
+//        properties.put(
+//                "propositions",
+//                Map.of(
+//                        "type",
+//                        "array",
+//                        "items",
+//                        Map.of(
+//                                "type",
+//                                "string"
+//                        )
+//                )
+//        );
+//
+//        Map<String, Object> schema =
+//                new LinkedHashMap<>();
+//
+//        schema.put(
+//                "type",
+//                "object"
+//        );
+//
+//        schema.put(
+//                "properties",
+//                properties
+//        );
+//
+//        schema.put(
+//                "required",
+//                List.of(
+//                        "terminos",
+//                        "propositions"
+//                )
+//        );
+//
+//        schema.put(
+//                "additionalProperties",
+//                false
+//        );
+//
+//        return schema;
+//    }
 
     private String removeTrailingSlash(
             String value) {
@@ -335,7 +353,8 @@ public class OllamaLlmService
     private record Options(
             double temperature,
             int num_ctx,
-            int num_predict) {
+            int num_predict,
+            int seed) {
     }
 
     private record OllamaRequest(
@@ -353,6 +372,27 @@ public class OllamaLlmService
     }
 
     private record OllamaResponse(
-            Message message) {
+
+            Message message,
+
+            @JsonProperty("total_duration")
+            long totalDuration,
+
+            @JsonProperty("load_duration")
+            long loadDuration,
+
+            @JsonProperty("prompt_eval_count")
+            long promptEvalCount,
+
+            @JsonProperty("prompt_eval_duration")
+            long promptEvalDuration,
+
+            @JsonProperty("eval_count")
+            long evalCount,
+
+            @JsonProperty("eval_duration")
+            long evalDuration
+
+    ) {
     }
 }

@@ -7,6 +7,7 @@ import kbee.rag.llm.LlmLawInterpretationRequest;
 import kbee.rag.llm.LlmRequestBuilder;
 import kbee.rag.llm.LlmService;
 import kbee.rag.ollama.OllamaLlmRequest;
+import kbee.rag.ollama.OllamaOptions;
 import reactor.core.publisher.Mono;
 
 public class QwenLawInterpretationRequest
@@ -62,7 +63,16 @@ public class QwenLawInterpretationRequest
         return null;
     }
 
+    @Override
+    public OllamaOptions options() {
 
+        return new OllamaOptions(
+                0.0,
+                16384,  // mismo num_ctx que BatchEnrichment
+                16,     // esto sí lo reducimos
+                42
+        );
+    }
 
     @Override
     public Mono<Boolean> execute() {
