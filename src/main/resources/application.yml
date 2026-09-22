@@ -6,6 +6,7 @@ logging:
     kbee.rag.thesaurus.ThesaursService: ERROR
     kbee.rag.reranker.RerankRequest: DEBUG
     kbee.rag.ollama.OllamaLlmService: DEBUG
+    kbee.rag.search.SolrSegmentDao: DEBUG
 
 spring:
   security:
@@ -17,12 +18,11 @@ spring:
       request-timeout: 9000000  
 solr:
   source:
-    # base-url: http://localhost:8087/solr
-    base-url: https://solr10.kbee.io/solr
-    core: aacontent
+    base-url: http://localhost:8087/solr
+    core: kbee_segments
     # Basic auth (leave username empty to disable authentication)
-    username: ${SOLR_SOURCE_USERNAME:}
-    password: ${SOLR_SOURCE_PASSWORD:}
+    username: ${1SOLR_SOURCE_USERNAME:}
+    password: ${1SOLR_SOURCE_PASSWORD:}
  
   target:
     #base-url: http://localhost:8983/solr

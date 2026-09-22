@@ -21,9 +21,12 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import kbee.rag.ollama.OllamaLlmService;
 import kbee.rag.segment.EmbeddedSegment;
 import kbee.rag.segment.TextSegment;
 import kbee.rag.thesaurus.Concept;
@@ -35,6 +38,9 @@ import reactor.core.scheduler.Schedulers;
 public class SolrSegmentDao
         implements SegmentDao {
 
+    private static final Logger log =
+            LoggerFactory.getLogger(SolrSegmentDao.class);;
+            
     private final SolrClient solrClient;
 
     private final String segmentCore;
@@ -67,6 +73,9 @@ public class SolrSegmentDao
 
         return Mono.fromRunnable(() -> {
 
+                    long start =
+                            System.nanoTime();
+
                     try {
 
                         SolrInputDocument document =
@@ -79,6 +88,17 @@ public class SolrSegmentDao
                                 document
                         );
 
+                        long elapsedMs =
+                                (System.nanoTime() - start)
+                                        / 1_000_000;
+
+                        log.info(
+                                "SOLR ADD | segment={} | elapsedMs={}",
+                                embeddedSegment.segment()
+                                        .documentId(),
+                                elapsedMs
+                        );
+
                     } catch (Exception e) {
 
                         throw new IllegalStateException(
@@ -86,6 +106,7 @@ public class SolrSegmentDao
                                 e
                         );
                     }
+
                 })
                 .subscribeOn(
                         Schedulers.boundedElastic()

@@ -49,7 +49,7 @@ public class ThesaursService {
      * Cantidad de voces que recuperamos inicialmente
      * por similitud vectorial.
      */
-
+ 
     private final EmbeddingService embeddingService;
     private final SolrClient solrClient;
     private final ThesaurusCandidateFilter thesaurusCandidateFilter;
@@ -61,7 +61,7 @@ public class ThesaursService {
             ThesaurusCandidateFilter thesaurusCandidateFilter,
             EmbeddingService embeddingService,
             SolrClient solrClient,
-            @Value("${solr.target.core}")
+            @Value("${solr.source.core}")
             String targetCore,
             @Value("${vector-search.embedding-field:embedding}")
             String embeddingField) {
