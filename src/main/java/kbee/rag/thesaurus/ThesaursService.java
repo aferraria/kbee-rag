@@ -302,7 +302,7 @@ public class ThesaursService {
             List<ThesaurusCandidate> candidates =
                     findVectorCandidates(
                             embeddings.get(i + 1),
-                            20
+                            40
                     );
 
             candidates =

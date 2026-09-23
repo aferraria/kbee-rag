@@ -143,6 +143,7 @@ public class LexicalSegmentSearcher
         String propositionQuery =
                 buildPropositionQuery(
                         propositions,
+                        terms,
                         hasLawNumbers
                                 ? 1.0
                                 : 4.0
@@ -242,15 +243,32 @@ public class LexicalSegmentSearcher
         );
     }
     
+    
     private String buildPropositionQuery(
             List<String> propositions,
+            List<Concept> concepts,
             double boost) {
 
         if (propositions == null
                 || propositions.isEmpty()) {
-
             return "";
         }
+
+        String conceptTerms =
+                concepts == null
+                        ? ""
+                        : concepts.stream()
+                                .filter(Objects::nonNull)
+                                .map(Concept::term)
+                                .filter(Objects::nonNull)
+                                .map(String::trim)
+                                .filter(term -> !term.isBlank())
+                                .map(term ->
+                                        term.replace(">", " ")
+                                )
+                                .collect(
+                                        Collectors.joining(" ")
+                                );
 
         return propositions.stream()
                 .filter(Objects::nonNull)
@@ -258,12 +276,20 @@ public class LexicalSegmentSearcher
                 .filter(proposition ->
                         !proposition.isBlank()
                 )
-                .map(proposition ->
-                        "legal_proposition:("
-                                + escape(proposition)
-                                + ")^"
-                                + boost
-                )
+                .map(proposition -> {
+
+                    String expanded =
+                            conceptTerms.isBlank()
+                                    ? proposition
+                                    : proposition
+                                            + " "
+                                            + conceptTerms;
+
+                    return "legal_proposition:("
+                            + escape(expanded)
+                            + ")^"
+                            + boost;
+                })
                 .collect(
                         Collectors.joining(
                                 " OR "
@@ -271,54 +297,36 @@ public class LexicalSegmentSearcher
                 );
     }
     
-//    private String buildConceptualQuery(
-//            List<Concept> terms) {
+//    private String buildPropositionQuery(
+//            List<String> propositions,
+//            double boost) {
 //
-//        if (terms == null || terms.isEmpty()) {
+//        if (propositions == null
+//                || propositions.isEmpty()) {
+//
 //            return "";
 //        }
 //
-//        return terms.stream()
-//                .filter(Objects::nonNull)
-//                .map(Concept::term)
+//        return propositions.stream()
 //                .filter(Objects::nonNull)
 //                .map(String::trim)
-//                .filter(term -> !term.isBlank())
-//                .map(term -> {
-//
-//                    String[] components =
-//                            term.split("\\s*>\\s*");
-//
-//                    int depth =
-//                            components.length;
-//
-//                    if (depth == 1) {
-//                        return "thesaurus_term:(\""
-//                                + escape(term)
-//                                + "\")^"
-//                                + depth;
-//                    }
-//
-//                    String componentQuery =
-//                            Arrays.stream(components)
-//                                    .map(String::trim)
-//                                    .filter(s -> !s.isBlank())
-//                                    .map(s ->
-//                                            "\"" + escape(s) + "\""
-//                                    )
-//                                    .collect(
-//                                            Collectors.joining(" AND ")
-//                                    );
-//
-//                    return "thesaurus_term:("
-//                            + componentQuery
-//                            + ")^"
-//                            + depth;
-//                })
+//                .filter(proposition ->
+//                        !proposition.isBlank()
+//                )
+//                .map(proposition ->
+//                        "legal_proposition:("
+//                                + escape(proposition)
+//                                + ")^"
+//                                + boost
+//                )
 //                .collect(
-//                        Collectors.joining(" OR ")
+//                        Collectors.joining(
+//                                " OR "
+//                        )
 //                );
 //    }
+ 
+
     
     private String buildConceptualQuery(
             List<Concept> terms) {

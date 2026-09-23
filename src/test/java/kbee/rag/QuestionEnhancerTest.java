@@ -75,11 +75,20 @@ Destaca que los honorarios en cuestión habían sido regulados mediante auto de 
 
 """;
         
-        String question = q4		;
+        String q10 =
+
+        		"""
+        
+        Precedente sobre quién es responsable si una pericia médica no se realiza por falta de impulso procesal de la parte actora
+""";
+        
+        String question = q10;
+        
+        String llm ="ollama";
         
         long start = System.currentTimeMillis();
         
-       EnhancedQuestion enhanced =
+        EnhancedQuestion enhanced =
                 questionEnhancer
                         .enhance(question)
                         .doOnNext(embeddingText -> {
@@ -93,7 +102,13 @@ Destaca que los honorarios en cuestión habían sido regulados mediante auto de 
                             );
                             error.printStackTrace();
                         })
-                        .block(); 
+                        .contextWrite(context ->
+                                context.put(
+                                        "llm",
+                                        llm
+                                )
+                        )
+                        .block();
         
         long end = System.currentTimeMillis();
         

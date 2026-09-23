@@ -1,9 +1,17 @@
 package kbee.rag.qwen;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -111,11 +119,17 @@ public class QwenEnrichmentRequest
                             parseTermEvaluation(
                                     response
                             );
+                    
+                    List<String> normalizedVoices =
+                            normalizeSelectedTerms(
+                                    evaluation.voices()
+                            );
 
                     List<Concept> selectedVoices =
                             reconstructVoices(
+                            //reconstructTextVoices(
                                     voices,
-                                    evaluation.voices()
+                                    normalizedVoices
                             );
 
                     List<String> propositions =
@@ -137,6 +151,8 @@ public class QwenEnrichmentRequest
 		                        )
 		        );
     }
+    
+    
 
 
     private String buildInput() {
@@ -342,6 +358,334 @@ public class QwenEnrichmentRequest
                 );
             }
         }
+    }
+    
+    private static final double AMBIGUOUS_VOICE_FACTOR = 0.90;
+
+    protected List<Concept> reconstructTextVoices(
+            List<Concept> candidateVoices,
+            List<String> selectedTerms) {
+
+        if (candidateVoices == null
+                || candidateVoices.isEmpty()
+                || selectedTerms == null
+                || selectedTerms.isEmpty()) {
+
+            return List.of();
+        }
+
+        Set<String> selectedTermSet =
+                selectedTerms.stream()
+                        .filter(Objects::nonNull)
+                        .map(String::trim)
+                        .filter(term -> !term.isBlank())
+                        .collect(Collectors.toCollection(
+                                LinkedHashSet::new
+                        ));
+
+        List<Concept> result =
+                new ArrayList<>();
+
+        Set<String> consumedTerms =
+                new HashSet<>();
+
+        /*
+         * =================================================
+         * 1. VOCES COMPLETAS
+         * =================================================
+         *
+         * Conservamos:
+         *
+         * - voces completas seleccionadas directamente;
+         * - voces reconstruidas cuando todos sus
+         *   componentes fueron seleccionados.
+         */
+
+        for (Concept concept : candidateVoices) {
+
+            if (concept == null
+                    || concept.term() == null
+                    || concept.term().isBlank()) {
+
+                continue;
+            }
+
+            String voice =
+                    concept.term().trim();
+
+            /*
+             * Voz completa seleccionada directamente
+             * por el LLM.
+             */
+            if (selectedTermSet.contains(voice)) {
+
+                result.add(concept);
+
+                Arrays.stream(
+                                voice.split("\\s*>\\s*")
+                        )
+                        .map(String::trim)
+                        .filter(term -> !term.isBlank())
+                        .forEach(consumedTerms::add);
+
+                continue;
+            }
+
+            /*
+             * Intentamos reconstruir la voz completa
+             * a partir de sus componentes.
+             *
+             * DERECHO es una raíz genérica y no necesita
+             * haber sido seleccionada.
+             */
+            List<String> components =
+                    Arrays.stream(
+                                    voice.split("\\s*>\\s*")
+                            )
+                            .map(String::trim)
+                            .filter(term -> !term.isBlank())
+                            .filter(term ->
+                                    !term.equals("DERECHO")
+                            )
+                            .toList();
+
+            if (!components.isEmpty()
+                    && components.stream()
+                            .allMatch(selectedTermSet::contains)) {
+
+                result.add(concept);
+                consumedTerms.addAll(components);
+            }
+        }
+
+        /*
+         * =================================================
+         * 2. EXPANSION POR HOJA
+         * =================================================
+         *
+         * IMPORTANTE:
+         *
+         * Aunque un término haya sido consumido para
+         * reconstruir una voz completa, igualmente
+         * buscamos otras voces que tengan ese término
+         * como hoja.
+         *
+         * Ejemplo:
+         *
+         * seleccionados:
+         *
+         * PRUEBA
+         * NEGLIGENCIA PROBATORIA
+         *
+         * Paso 1:
+         *
+         * PRUEBA > NEGLIGENCIA PROBATORIA
+         *
+         * Paso 2:
+         *
+         * también podemos recuperar:
+         *
+         * PRUEBA > PRODUCCION > NEGLIGENCIA PROBATORIA
+         * ...
+         */
+
+        for (String selectedTerm : selectedTermSet) {
+
+            /*
+             * Buscamos todas las voces donde selectedTerm
+             * sea exactamente la hoja.
+             */
+            Map<String, Concept> matchingVoices =
+                    candidateVoices.stream()
+                            .filter(Objects::nonNull)
+                            .filter(concept ->
+                                    concept.term() != null
+                                            && !concept.term().isBlank()
+                            )
+                            .filter(concept -> {
+
+                                List<String> components =
+                                        Arrays.stream(
+                                                        concept.term()
+                                                                .split("\\s*>\\s*")
+                                                )
+                                                .map(String::trim)
+                                                .filter(term ->
+                                                        !term.isBlank()
+                                                )
+                                                .toList();
+
+                                if (components.isEmpty()) {
+                                    return false;
+                                }
+
+                                String leaf =
+                                        components.get(
+                                                components.size() - 1
+                                        );
+
+                                return selectedTerm.equals(leaf);
+                            })
+                            .collect(Collectors.toMap(
+                                    concept ->
+                                            concept.term().trim(),
+
+                                    Function.identity(),
+
+                                    /*
+                                     * Si la misma voz aparece varias veces,
+                                     * conservamos la de mayor score.
+                                     */
+                                    (a, b) ->
+                                            a.score() >= b.score()
+                                                    ? a
+                                                    : b,
+
+                                    LinkedHashMap::new
+                            ));
+
+            /*
+             * Agregamos las reconstrucciones que todavía
+             * no estén presentes en result.
+             */
+            for (Concept concept : matchingVoices.values()) {
+
+                String voice =
+                        concept.term().trim();
+
+                boolean alreadyPresent =
+                        result.stream()
+                                .filter(Objects::nonNull)
+                                .filter(existing ->
+                                        existing.term() != null
+                                )
+                                .anyMatch(existing ->
+                                        voice.equals(
+                                                existing.term().trim()
+                                        )
+                                );
+
+                if (!alreadyPresent) {
+
+                    /*
+                     * Esta voz se obtiene por expansión
+                     * de una hoja y no por reconstrucción
+                     * completa.
+                     *
+                     * Por ahora mantenemos el factor que
+                     * ya veníamos utilizando.
+                     */
+                    result.add(
+                            new Concept(
+                                    voice,
+                                    (float) (
+                                            concept.score()
+                                                    * AMBIGUOUS_VOICE_FACTOR
+                                    )
+                            )
+                    );
+                }
+            }
+
+            /*
+             * Si selectedTerm ya participó en una voz
+             * completa, NO lo agregamos además como
+             * término independiente.
+             *
+             * Ojo: este control está DESPUÉS de la
+             * expansión por hoja.
+             */
+            if (consumedTerms.contains(selectedTerm)) {
+                continue;
+            }
+
+            /*
+             * Si encontramos voces cuya hoja coincide,
+             * tampoco necesitamos conservar el término
+             * suelto.
+             */
+            if (!matchingVoices.isEmpty()) {
+                continue;
+            }
+
+            /*
+             * No existe ninguna voz cuya hoja sea
+             * selectedTerm.
+             *
+             * Conservamos el comportamiento anterior:
+             * buscamos el mejor candidato que contenga
+             * el término y lo mantenemos individualmente.
+             */
+            candidateVoices.stream()
+                    .filter(Objects::nonNull)
+                    .filter(concept ->
+                            concept.term() != null
+                    )
+                    .filter(concept ->
+                            Arrays.stream(
+                                            concept.term()
+                                                    .split("\\s*>\\s*")
+                                    )
+                                    .map(String::trim)
+                                    .anyMatch(
+                                            selectedTerm::equals
+                                    )
+                    )
+                    .max(Comparator.comparingDouble(
+                            Concept::score
+                    ))
+                    .ifPresent(concept -> {
+
+                        boolean alreadyPresent =
+                                result.stream()
+                                        .filter(Objects::nonNull)
+                                        .filter(existing ->
+                                                existing.term() != null
+                                        )
+                                        .anyMatch(existing ->
+                                                selectedTerm.equals(
+                                                        existing.term().trim()
+                                                )
+                                        );
+
+                        if (!alreadyPresent) {
+                            result.add(
+                                    new Concept(
+                                            selectedTerm,
+                                            concept.score()
+                                    )
+                            );
+                        }
+                    });
+        }
+
+        return result;
+    }
+    
+    
+    private List<String> normalizeSelectedTerms(
+            List<String> selectedTerms) {
+
+        if (selectedTerms == null
+                || selectedTerms.isEmpty()) {
+            return List.of();
+        }
+
+        return selectedTerms.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(term -> !term.isBlank())
+                .map(term -> {
+
+                    String[] components =
+                            term.split("\\s*>\\s*");
+
+                    return components[
+                            components.length - 1
+                    ].trim();
+                })
+                .distinct()
+                .toList();
     }
 
     public static class Builder

@@ -119,7 +119,7 @@ public class QwenRagResponseRequest
     	public static OllamaOptions defaults() {
     	    return new OllamaOptions(
     	            0.0,
-    	            65536,
+    	            98304,
     	            8192,
     	            42
     	    );
@@ -161,7 +161,19 @@ public class QwenRagResponseRequest
     	            "\n\nFUENTES\n\n"
     	    );
 
-    	    List<ExpandedSource> topSources =
+    	    List<ExpandedSource> topSources;
+//    	            sources.stream()
+//    	                    .sorted(
+//    	                            Comparator.comparingDouble(
+//    	                                    (ExpandedSource source) ->
+//    	                                            source.selected().score()
+//    	                            ).reversed()
+//    	                    )
+//    	                    .limit(20)
+//    	                    .toList();
+    	    
+    	    
+    	    List<ExpandedSource> sortedSources =
     	            sources.stream()
     	                    .sorted(
     	                            Comparator.comparingDouble(
@@ -169,11 +181,31 @@ public class QwenRagResponseRequest
     	                                            source.selected().score()
     	                            ).reversed()
     	                    )
-    	                    .limit(20)
     	                    .toList();
 
-    	    int sourceIndex = 0;
+    	    int limit = 20;
 
+    	    if (sortedSources.size() <= limit) {
+    	        topSources = sortedSources;
+    	    } else {
+
+    	        double cutoffScore =
+    	                sortedSources
+    	                        .get(limit - 1)
+    	                        .selected()
+    	                        .score();
+
+    	        topSources =
+    	                sortedSources.stream()
+    	                        .takeWhile(source ->
+    	                                source.selected().score()
+    	                                        >= cutoffScore
+    	                        )
+    	                        .toList();
+    	    }
+
+    	    int sourceIndex = 0;
+    	    
     	    for (ExpandedSource source : topSources) {
 
     	        appendSource(

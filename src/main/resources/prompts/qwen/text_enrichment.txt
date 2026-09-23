@@ -56,6 +56,7 @@ Si la respuesta es SÍ, incluye el término como seleccionado.
 Si la respuesta es NO, no lo selecciones.
 
 
+
 ==================================================
 B) PROPOSICIONES JURÍDICAS
 ==================================================

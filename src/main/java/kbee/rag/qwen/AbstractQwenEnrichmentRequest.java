@@ -54,12 +54,19 @@ public abstract class AbstractQwenEnrichmentRequest<T>
                 .map(Concept::term)
                 .map(String::trim)
                 .flatMap(voice -> {
+                	
+
+//                    if ("PRUEBA PERICIAL MEDICA".equals(voice)) {
+//                        voice =
+//                                "PRUEBA PERICIAL MEDICA"
+//                                + " [Definición: cuando se hace una pericia médico]";
+//                    }
 
                     Stream<String> fullVoice =
                             Stream.of(
                                     voice
                             );
-
+ 
                     Stream<String> atomicTerms =
                             Arrays.stream(
                                     voice.split(
