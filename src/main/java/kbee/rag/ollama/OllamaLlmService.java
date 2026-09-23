@@ -41,7 +41,18 @@ public class OllamaLlmService
     private final String model;
 
     private final Duration requestTimeout;
+    
+    private final double temperature;
 
+    
+    /**
+     * Semilla de muestreo para reproducibilidad.
+     * null = no se envía (comportamiento por defecto
+     * de Ollama, no determinista).
+     */
+    private final Long seed;
+    
+    
     public OllamaLlmService(
             ObjectMapper objectMapper,
             @Value("${llm.ollama.base-url}")
@@ -51,7 +62,12 @@ public class OllamaLlmService
             @Value("${llm.ollama.connection-timeout-ms:5000}")
             long connectionTimeoutMs,
             @Value("${llm.ollama.request-timeout-ms:120000}")
-            long requestTimeoutMs) {
+            long requestTimeoutMs,
+            
+            @Value("${llm.ollama.temperature:0.0}")
+            double temperature,
+            @Value("${llm.ollama.seed:#{null}}")
+            Long seed) {
 
         this.objectMapper =
                 objectMapper;
@@ -64,6 +80,13 @@ public class OllamaLlmService
         this.model =
                 model;
 
+
+        this.temperature =
+                temperature;
+
+        this.seed =
+                seed;
+        
         this.requestTimeout =
                 Duration.ofMillis(
                         requestTimeoutMs
@@ -78,12 +101,22 @@ public class OllamaLlmService
                         )
                         .build();
 
-        System.out.println(
-                "===== OLLAMA MODEL: "
-                        + this.model
-                        + " ====="
-        );
-    }
+
+        log.info(
+                                "===== OLLAMA MODEL: "
+                                        + this.model
+                                        + " | temperature="
+                                        + this.temperature
+                                        + " | seed="
+                                        + (this.seed == null
+                                                ? "none"
+                                                : this.seed)
+                                        + " ====="
+                        );
+                        
+        		
+        }
+    
 
     @Override
     public String providerId() {

@@ -88,15 +88,6 @@ public class QwenLocalEmbeddingService implements EmbeddingService {
                             requestBody
                     );
 
-//            System.out.println(
-//                    "Embedding model = " + model
-//            );
-//
-//            System.out.println(
-//                    "Embedding endpoint = "
-//                            + baseUrl
-//                            + "/api/embed"
-//            );
 
             HttpRequest request =
                     HttpRequest.newBuilder()

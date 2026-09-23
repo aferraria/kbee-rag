@@ -19,7 +19,7 @@ spring:
       request-timeout: 9000000  
 solr:
   source:
-    base-url: http://localhost:8087/solr
+    base-url: https://solr10.kbee.io/solr
     core: kbee_segments
     # Basic auth (leave username empty to disable authentication)
     username: ${1SOLR_SOURCE_USERNAME:}

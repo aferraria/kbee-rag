@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Component;
 
+import kbee.rag.audit.Logger;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -26,7 +27,11 @@ import reactor.core.scheduler.Schedulers;
 public class JudicialFileParser
         implements ApiFileParser {
 
-    /*
+
+	static private Logger logger = Logger.getLogger(JudicialFileParser.class.getName());
+
+	
+	/*
      * =================================================
      * CONSTANTES
      * =================================================
@@ -146,7 +151,7 @@ public class JudicialFileParser
 
         if (isMissingDecision(content)) {
 
-            System.out.println(
+           logger.debug(
                     file.name()
                             + " -> descartado: "
                             + "fallo inexistente"
@@ -262,7 +267,7 @@ public class JudicialFileParser
             result.add(decision);
         }
         
-        System.out.println(
+        logger.debug(
                 file.name()
                         + " -> falloId="
                         + falloId
@@ -686,13 +691,13 @@ public class JudicialFileParser
                     summaryMatcher.start()
             );
 
-            System.out.println(
+            logger.debug(
                     "Inicio de sumario encontrado: "
                             + summaryMatcher.group()
             );
         }
 
-        System.out.println(
+        logger.debug(
                 "Sumarios esperados="
                         + expectedCount
                         + ", comienzos encontrados="
@@ -788,7 +793,7 @@ public class JudicialFileParser
             }
         }
 
-        System.out.println(
+        logger.debug(
                 "Sumarios extraídos="
                         + summaries.size()
         );
@@ -1005,12 +1010,12 @@ public class JudicialFileParser
 
         if (!narrativeMatcher.find()) {
 
-            System.out.println(
+            logger.debug(
                     "Bloque descartado: "
                             + "no se encontró texto narrativo"
             );
 
-            System.out.println(
+            logger.debug(
                     "TAIL="
                             + tail
             );

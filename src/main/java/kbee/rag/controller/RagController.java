@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 import kbee.rag.audit.Logger;
 import kbee.rag.search.DocumentAnalysisRequest;
 import kbee.rag.search.DocumentAnalysisResponse;
+import kbee.rag.search.QueryAnalysis;
+import kbee.rag.search.QueryAnalysisRequest;
 import kbee.rag.search.RagRequest;
 import kbee.rag.search.RagResponse;
 import kbee.rag.search.RagService;
@@ -58,5 +60,13 @@ public class RagController extends RagBaseController {
 
 		//return null;
 
+	}
+
+	@PostMapping("/queryanalysis")
+	public Mono<QueryAnalysis> queryAnalysis(@RequestBody QueryAnalysisRequest request) {
+
+		logger.debug("/queryanalysis " + request.toString());
+
+		return ragService.queryAnalysis(request);
 	}
 }

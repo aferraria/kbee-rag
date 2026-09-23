@@ -68,6 +68,12 @@ public class RagService {
     public Mono<RagResponse> answer(
             RagRequest request) {
 
+        /**
+         * server side id of the query. The query information and results will be
+         * stored on disk or cache under this id (to be implemented).
+         */
+        String queryId = java.util.UUID.randomUUID().toString();
+
         AuditContext auditContext =
                 new AuditContext(
                         request.question(),
@@ -75,6 +81,7 @@ public class RagService {
                 );
 
         return doAnswer(request)
+                .map(response -> response.withQueryId(queryId))
                 .doOnNext(response -> {
 
                     AuditRecord record =
@@ -173,6 +180,32 @@ public class RagService {
                                         auditContext
                                 )
                 );
+    }
+
+    /**
+     * Global analysis of a query previously executed and stored by the server.
+     * The query is identified by the server's query id.
+     *
+     * TODO stub implementation: query storage on the server is not implemented
+     * yet, so a placeholder analysis is returned.
+     */
+    public Mono<QueryAnalysis> queryAnalysis(QueryAnalysisRequest request) {
+
+        long start = System.currentTimeMillis();
+
+        String analysis =
+                "Análisis general (stub) para la consulta " + request.queryId()
+                        + ". El almacenamiento de consultas en el servidor todavía no está implementado.";
+
+        return Mono.just(
+                new QueryAnalysis(
+                        request.queryId(),
+                        request.llm(),
+                        java.time.OffsetDateTime.now(),
+                        System.currentTimeMillis() - start,
+                        analysis
+                )
+        );
     }
 
     public Mono<DocumentAnalysisResponse> doAnalyze(DocumentAnalysisRequest request) {

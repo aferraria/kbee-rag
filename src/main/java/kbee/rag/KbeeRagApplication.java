@@ -17,7 +17,20 @@ public class KbeeRagApplication {
 	static private Logger std_logger = Logger.getLogger("StartupLogger");
 
 	public static void main(String[] args) {
-		 std_logger.debug("Args: " + Arrays.toString(args));
+		/*
+		 * El JDK HttpClient (usado por HttpJdkSolrClient) reutiliza
+		 * conexiones keep-alive que el proxy/LB frente a Solr remoto
+		 * cierra por inactividad, provocando
+		 * "HTTP/1.1 header parser received no bytes".
+		 * Limitamos la reutilización a 30 segundos (menor que el
+		 * idle-timeout típico de 60s del servidor).
+		 * Debe setearse antes de que se cargue la clase HttpClient.
+		 */
+		if (System.getProperty("jdk.httpclient.keepalive.timeout") == null) {
+			System.setProperty("jdk.httpclient.keepalive.timeout", "30");
+		}
+
+		std_logger.debug("Args: " + Arrays.toString(args));
 		SpringApplication.run(KbeeRagApplication.class, args);
 	}
 
