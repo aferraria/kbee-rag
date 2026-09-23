@@ -162,7 +162,7 @@ public class QwenEnrichmentRequest
                         voices
                 );
 
-        return buildTextData(
+       return buildTextData(
                 text,
                 llmCandidates
         );
