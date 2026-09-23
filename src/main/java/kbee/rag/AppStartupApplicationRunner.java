@@ -53,7 +53,7 @@ public class AppStartupApplicationRunner implements ApplicationRunner {
 		// Settings settings = getAppContext().getBean(Settings.class);
 		// startupLogger.info("App name -> " + settings.getAppName());
 		// startupLogger.info("Port -> " + settings.getPort());
-		//startupLogger.info(ServerConstant.SEPARATOR);
+		// startupLogger.info(ServerConstant.SEPARATOR);
 
 		for (String s : args.getSourceArgs()) {
 			logger.debug(s);
