@@ -16,7 +16,7 @@ import kbee.rag.llm.LlmLawInterpretationRequest;
 import kbee.rag.llm.LlmRequestFactory;
 import kbee.rag.thesaurus.Concept;
 import kbee.rag.thesaurus.ConceptList;
-import kbee.rag.thesaurus.ThesaursService;
+import kbee.rag.thesaurus.ThesaurusService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -27,7 +27,7 @@ public class DefaultLegalTextEnhancer
     private static final Logger log =
             LoggerFactory.getLogger(LegalTextEnhancer.class);
 
-    private final ThesaursService thesaurusService;
+    private final ThesaurusService thesaurusService;
     
     private final LlmRequestFactory llmRequestFactory;
     
@@ -35,7 +35,7 @@ public class DefaultLegalTextEnhancer
             "INTERPRETACION DE LA LEY";
 
     public DefaultLegalTextEnhancer(
-            ThesaursService conceptExtractorService,
+            ThesaurusService conceptExtractorService,
             LlmRequestFactory llmRequestFactory) {
 
         this.thesaurusService =

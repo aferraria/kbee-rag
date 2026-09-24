@@ -1,7 +1,10 @@
 package kbee.rag.thesaurus;
+
+import java.util.List;
+
 public record ConceptRecord(
         String id,
         String term,
-        Float[] vector
+        List<Float> embedding
 ) {
 }

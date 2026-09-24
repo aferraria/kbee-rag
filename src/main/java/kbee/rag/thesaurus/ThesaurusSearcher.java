@@ -2,9 +2,11 @@ package kbee.rag.thesaurus;
 
 import java.util.List;
 
+import reactor.core.publisher.Mono;
+
 public interface ThesaurusSearcher {
 
-    List<Concept> findCandidates(
+    Mono<List<Concept>> findCandidates(
             String text
     );
 }

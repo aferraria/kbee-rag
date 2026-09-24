@@ -25,6 +25,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import kbee.rag.embedding.EmbeddingService;
@@ -33,12 +34,12 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 @Service
-public class ThesaursService {
+public class OldThesaursService {
 	
 	
 
 	    private static final Logger log =
-	            LoggerFactory.getLogger(ThesaursService.class);
+	            LoggerFactory.getLogger(OldThesaursService.class);
 
     /*
      * Cantidad máxima de voces que finalmente
@@ -57,7 +58,7 @@ public class ThesaursService {
     private final String targetCore;
     private final String embeddingField;
 
-    public ThesaursService(
+    public OldThesaursService(
             ThesaurusCandidateFilter thesaurusCandidateFilter,
             EmbeddingService embeddingService,
             SolrClient solrClient,

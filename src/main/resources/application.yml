@@ -3,7 +3,7 @@ server:
 
 logging:
   level:
-    kbee.rag.thesaurus.ThesaursService: DEBUG
+    kbee.rag.thesaurus.ThesaursService: info
     kbee.rag.reranker.RerankRequest: DEBUG
     kbee.rag.ollama.OllamaLlmService: DEBUG
     kbee.rag.text.LegalTextEnhancer: DEBUG
@@ -95,7 +95,7 @@ segment-indexer:
 llm:
   # Default provider used when the client does not send "llm" in the request.
   # Available: ollama | openai | claude | openrouter
-  provider: openai
+  provider: ollama
 
   ollama:
     enabled: true

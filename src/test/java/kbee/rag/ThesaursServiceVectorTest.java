@@ -8,14 +8,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import kbee.rag.thesaurus.ThesaursService;
+import kbee.rag.thesaurus.OldThesaursService;
 import kbee.rag.thesaurus.ThesaurusCandidate;
 
 @SpringBootTest
 class ThesaursServiceVectorTest {
 
     @Autowired
-    private ThesaursService thesaursService;
+    private OldThesaursService thesaursService;
 
     @Test
     void shouldFindVoluntadVicio() {
