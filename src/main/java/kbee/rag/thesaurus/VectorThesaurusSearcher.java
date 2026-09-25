@@ -59,31 +59,63 @@ public class VectorThesaurusSearcher
     private List<Concept> findNearest(
             List<Float> queryEmbedding) {
 
-        return concepts
-                .stream()
-                .filter(concept ->
-                        concept.embedding() != null
-                                && !concept.embedding().isEmpty()
-                )
-                .map(concept ->
-                        new ScoredConcept(
-                                concept,
-                                cosineSimilarity(
-                                        queryEmbedding,
-                                        concept.embedding()
+        List<Concept> candidates =
+                concepts.stream()
+                        .filter(concept ->
+                                concept.embedding() != null
+                                        && !concept.embedding().isEmpty()
+                        )
+                        .map(concept ->
+                                new ScoredConcept(
+                                        concept,
+                                        cosineSimilarity(
+                                                queryEmbedding,
+                                                concept.embedding()
+                                        )
                                 )
                         )
-                )
-                .sorted(
-                        Comparator.comparingDouble(
-                                ScoredConcept::score
-                        ).reversed()
-                )
-                .limit(topK)
-                .map(scored ->
+                        .sorted(
+                                Comparator.comparingDouble(
+                                        ScoredConcept::score
+                                ).reversed()
+                        )
+                        .limit(topK)
+                        .map(scored ->
+                                new Concept(
+                                        scored.concept().term(),
+                                        scored.score()
+                                )
+                        )
+                        .toList();
+
+        return normalize(candidates);
+    }
+
+    private List<Concept> normalize(
+            List<Concept> candidates) {
+
+        if (candidates.isEmpty()) {
+            return candidates;
+        }
+
+        double maxScore =
+                candidates.stream()
+                        .mapToDouble(Concept::score)
+                        .max()
+                        .orElse(1.0);
+
+        if (maxScore <= 0.0) {
+            return candidates;
+        }
+
+        return candidates.stream()
+                .map(candidate ->
                         new Concept(
-                                scored.concept().term(),
-                                scored.score()
+                                candidate.term(),
+                                (float) (
+                                        candidate.score()
+                                                / maxScore
+                                )
                         )
                 )
                 .toList();

@@ -127,7 +127,8 @@ public class QwenRagResponseRequest
     	@Override
     	public Mono<RagResponse> execute() {
 
-    	    return llm.generate(this)
+
+    		return llm.generate(this)
     	            .map(answer -> {
 
     	                List<ExpandedSource> selectedSources =

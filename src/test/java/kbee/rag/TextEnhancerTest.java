@@ -108,7 +108,7 @@ Finalmente, con relación a los rubros indemnizatorios demandados, el Colegiado 
         
         String segmentText10 =
         """
-        		        Con base en el relato efectuado precedentemente, se adelanta que merecen favorable acogida los agravios vinculados con la arbitrariedad del pronunciamiento impugnado por rechazar la falta de acción a pesar de la renuncia expresa formulada por los ahora actores.\n\nEn efecto, teniendo en cuenta que se halla fuera de toda discusión que los accionantes recibieron el pago de la \"ayuda extraordinaria\" contemplada en el régimen reparatorio especial establecido por ley 12183 (modif. por ley 12259), la cuestión planteada es sustancialmente análoga a la considerada y resuelta por este Tribunal en los precedentes \"Villa\" y \"Ulrich\" (A. y S. nro. 82 y nro. 83, año 2024), a cuyos fundamentos se remite en lo pertinente, y se dan aquí por reproducidos por razones de economía procesal.\n\nSentada en dichos precedentes la disponibilidad de los derechos patrimoniales en juego, resta aquí añadir que en aquellos fallos esta Corte descartó que la vulnerabilidad, urgencia o necesidad fueran fundamentos suficientes para declarar la inconstitucionalidad del artículo 7 de la ley 12183, y expresó que tales circunstancias podrían a lo sumo ser ponderadas por los Sentenciantes, eventualmente, a fin de examinar la existencia de algún vicio de la voluntad nulificante de los respectivos actos jurídicos de renuncia. Se hizo especial énfasis en que una solución de ese tipo debía basarse en esfuerzos argumentales y probatorios específicos que en tal sentido hubiese desplegado el accionante.
+        Ello así desde que, entrando al examen de los vicios imputados al decisorio, puede advertirse que si bien el impugnante invoca la existencia de diversas causales de arbitrariedad -tales, haber invertido la carga de la prueba, conculcado el principio de inocencia, soslayado elementos de juicio de decisiva trascendencia para la solución del pleito y prescindido de aplicar al sub judice el principio de insignificancia-, y a pesar del matiz constitucional que aquél intenta asignarles, lo cierto es que no trasuntan más que su disconformidad con el criterio adoptado por el Tribunal en ejercicio de funciones propias, sobre materia -por regla- ajena a esta vía de excepción, y sin lograr convencer a este Cuerpo acerca de que en tal labor -independientemente del acierto o error- aquélla se hubiese apartado de los parámetros fácticos, probatorios y jurídicos con que contaba.,
         		
         """;
         
@@ -124,7 +124,7 @@ interpuso recurso de inconstitucionalidad con fundamento en el
 artículo 1, incisos 2 y 3, de la ley 7055.
                 """;
         
-        String text = q3      		
+        String text = segmentText10;      		
         		;
         
         

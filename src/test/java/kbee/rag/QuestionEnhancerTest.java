@@ -48,6 +48,20 @@ Puede la víctima iniciar o impulsar la persecución penal sin intervención del
         
         String q5 =
                 """
+        		3.b. El cuestionamiento relativo a limitación de la progresión de la
+liquidación al 31 de marzo del año 1.991 debe ser atendido.
+
+En efecto, la "insignificancia" o "irrelevancia" de una suma puede ser
+motivo de consideración, a los fines de su renuncia, solo por la parte
+acreedora; y, en el caso la actora no lo ha hecho, por lo que no existe
+motivo atendible alguno para que esa renuncia le sea impuesta.
+
+Sobre este particular, el ofrecimiento de la demandada de liquidar este
+concepto de manera complementaria, importa un allanamiento implícito a
+la pretensión y releva al Tribunal de mayores consideraciones. Ello, sin
+perjuicio de que otras causas (tal como se destaca en la descripción de
+contenido que antecede a la liquidación cuestionada) importen la absorción
+de esa suma; como, por ejemplo, el cambio de categoría del agente.
         Precedente sobre si honorarios profesionales son obligación de valor u obligación de dinero una vez que la regulación queda firme"
                 """;
         
@@ -79,12 +93,12 @@ Destaca que los honorarios en cuestión habían sido regulados mediante auto de 
 
         		"""
         
-        Precedente sobre quién es responsable si una pericia médica no se realiza por falta de impulso procesal de la parte actora
+       principio de insignificancia en relación con hurtos en supermercados
 """;
         
-        String question = q10;
+        String question = q5;
         
-        String llm ="ollama";
+        String llm ="openai";
         
         long start = System.currentTimeMillis();
         

@@ -483,7 +483,7 @@ public class LexicalSegmentSearcher
 
         params.set(
                 "mm",
-                "60%"
+                "20%"
         );
 
         params.set(

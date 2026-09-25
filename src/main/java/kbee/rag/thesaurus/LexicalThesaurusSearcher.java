@@ -90,11 +90,31 @@ public class LexicalThesaurusSearcher
                 "score"
         );
 
-        QueryResponse response =
-                solrClient.query(
-                        thesaurusCore,
-                        query
-                );
+        QueryResponse response;
+
+        long start = System.nanoTime();
+
+        try {
+
+            response =
+                    solrClient.query(
+                            thesaurusCore,
+                            query
+                    );
+
+        } finally {
+
+//            long elapsedMs =
+//                    (System.nanoTime() - start)
+//                            / 1_000_000;
+//
+//            System.out.println(
+//                    "LEXICAL SOLR PERF | elapsedMs="
+//                            + elapsedMs
+//                            + " | text="
+//                            + text
+//            );
+        }
 
         List<Concept> result =
                 new ArrayList<>();
@@ -115,9 +135,7 @@ public class LexicalThesaurusSearcher
             }
 
             float score =
-                    scoreValue(
-                            document
-                    );
+                    scoreValue(document);
 
             result.add(
                     new Concept(
@@ -127,9 +145,42 @@ public class LexicalThesaurusSearcher
             );
         }
 
-        return List.copyOf(
-                result
-        );
+        return normalize(result)
+                .stream()
+                .filter(concept ->
+                        concept.score() >= 0.80
+                )
+                .toList();
+       }
+
+    private List<Concept> normalize(
+            List<Concept> candidates) {
+
+        if (candidates.isEmpty()) {
+            return List.of();
+        }
+
+        double maxScore =
+                candidates.stream()
+                        .mapToDouble(Concept::score)
+                        .max()
+                        .orElse(1.0);
+
+        if (maxScore <= 0.0) {
+            return List.copyOf(candidates);
+        }
+
+        return candidates.stream()
+                .map(candidate ->
+                        new Concept(
+                                candidate.term(),
+                                (float) (
+                                        candidate.score()
+                                                / maxScore
+                                )
+                        )
+                )
+                .toList();
     }
     private String buildQuery(
             String text) {

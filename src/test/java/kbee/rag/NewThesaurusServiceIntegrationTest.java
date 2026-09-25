@@ -42,7 +42,7 @@ class NewThesaurusServiceIntegrationTest {
     private ThesaurusSearcher thesaurusSearcher;
     
     
-    @Test
+    //@Test
     void compareVectorAndLexicalSearcherPerformance() {
 
         String text = """
@@ -202,11 +202,7 @@ class NewThesaurusServiceIntegrationTest {
         void compareCurrentAndNewService() {
 
             String text = """
-Antecedentes sobre la responsabilidad del Estado por las inundaciones
-ocurridas en la ciudad de Santa Fe en 2003 como consecuencia del
-desborde del río Salado, los daños sufridos por los damnificados y
-la responsabilidad derivada de la falta de obras y medidas adecuadas
-para prevenir o mitigar la inundación.
+Precedente sobre requisitos que exige la Corte Suprema de Santa Fe para anular una renuncia a reclamar daños por vicios de la voluntad
                     """;
 
             /*

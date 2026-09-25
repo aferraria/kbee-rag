@@ -3,11 +3,11 @@ server:
 
 logging:
   level:
-    kbee.rag.thesaurus.ThesaursService: info
-    kbee.rag.reranker.RerankRequest: DEBUG
-    kbee.rag.ollama.OllamaLlmService: DEBUG
-    kbee.rag.text.LegalTextEnhancer: DEBUG
-    kbee.rag.search.SolrSegmentDao: DEBUG
+    kbee.rag.thesaurus.OldThesaursService: DEBUG
+    kbee.rag.reranker.RerankRequest: error
+    kbee.rag.ollama.OllamaLlmService: error
+    kbee.rag.text.LegalTextEnhancer: error
+    kbee.rag.search.SolrSegmentDao: error
 
 spring:
   security:
